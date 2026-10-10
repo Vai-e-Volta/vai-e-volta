@@ -1,0 +1,26 @@
+# Segredos e dados locais (só o .env.example é versionado)
+.env
+backups/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Editor e sistema
+.idea/
+.vscode/
+.DS_Store
+*.log

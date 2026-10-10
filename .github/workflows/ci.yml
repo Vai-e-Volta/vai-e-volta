@@ -1,0 +1,139 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * *" # 02:00 em Brasília; só o job e2e roda no agendamento
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Os nomes dos jobs abaixo são os required status checks da proteção da main.
+# Renomear um job exige atualizar a proteção (Tech Lead).
+# Cada passo só roda se a pasta correspondente já existir, para a CI ficar verde
+# no esqueleto inicial e passar a valer de verdade assim que o código chegar.
+
+jobs:
+  lint-backend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('backend/pyproject.toml') != ''
+        uses: actions/setup-python@v5
+        with: { python-version: "3.14" }
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: pip install "uv==0.9.*"
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: cd backend && uv sync --frozen
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: make lint-backend
+
+  lint-frontend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('frontend/package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - if: hashFiles('frontend/package-lock.json') != ''
+        run: cd frontend && npm ci
+      - if: hashFiles('frontend/package-lock.json') != ''
+        run: make lint-frontend
+
+  test-backend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:test@localhost:5432/test
+      APP_ENV: test
+      JWT_SECRET: ci-only-secret-ci-only-secret-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('backend/pyproject.toml') != ''
+        uses: actions/setup-python@v5
+        with: { python-version: "3.14" }
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: pip install "uv==0.9.*"
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: cd backend && uv sync --frozen
+      - if: hashFiles('backend/alembic.ini') != ''
+        run: cd backend && uv run alembic upgrade head
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: make test-backend
+      - if: hashFiles('backend/pyproject.toml') != ''
+        run: make openapi && git diff --exit-code docs/openapi.json
+
+  test-frontend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('frontend/package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - if: hashFiles('frontend/package-lock.json') != ''
+        run: cd frontend && npm ci
+      - if: hashFiles('frontend/package-lock.json') != ''
+        run: make test-frontend
+
+  build-frontend:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('frontend/package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - if: hashFiles('frontend/package-lock.json') != ''
+        run: cd frontend && npm ci && npm run build
+
+  build-images:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('backend/Dockerfile') != ''
+        run: docker build ./backend
+      - if: hashFiles('frontend/Dockerfile') != ''
+        run: docker build ./frontend
+
+  secrets-scan:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      # Binário de código aberto (a action oficial exige licença paga em organizações)
+      - run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks git --redact --verbose
+
+  # Fora dos checks obrigatórios: roda na main e à noite
+  e2e:
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('e2e/package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - if: hashFiles('e2e/package-lock.json') != ''
+        run: |
+          make up
+          cd e2e && npm ci && npx playwright install --with-deps chromium && npx playwright test
