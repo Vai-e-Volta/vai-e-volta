@@ -1,0 +1,33 @@
+[project]
+name = "vai-e-volta-backend"
+version = "0.1.0"
+description = "Backend da plataforma Vai e Volta"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.15,<2",
+    "fastapi>=0.115,<1",
+    "psycopg[binary]>=3.2,<4",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.34,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27,<1",
+    "pytest>=8,<9",
+    "pytest-cov>=6,<7",
+    "ruff>=0.11,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.uv]
+package = false
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

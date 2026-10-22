@@ -26,6 +26,18 @@ A aplicação abre em http://localhost:8080.
 | Exportar contrato OpenAPI | `make openapi` |
 | Backup · restauração | `make backup` · `make restore DIR=backups/<carimbo>` |
 
+## Banco de dados e migrações
+
+O backend usa `DATABASE_URL` para se conectar ao PostgreSQL. No diretório `backend`, use:
+
+```bash
+uv run alembic revision --autogenerate -m "descricao_da_migracao"
+uv run alembic upgrade head
+uv run alembic downgrade -1
+```
+
+O servidor FastAPI inicia com `make run-backend`. No início da aplicação, o `lifespan` executa `alembic upgrade head`; se a migração falhar, o servidor não inicia. Revise toda migração gerada antes de aplicá-la.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.

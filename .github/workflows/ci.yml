@@ -74,7 +74,7 @@ jobs:
         run: cd backend && uv sync --frozen
       - if: hashFiles('backend/alembic.ini') != ''
         run: cd backend && uv run alembic upgrade head
-      - if: hashFiles('backend/pyproject.toml') != ''
+      - if: hashFiles('backend/tests/**') != ''
         run: make test-backend
       - if: hashFiles('backend/pyproject.toml') != ''
         run: make openapi && git diff --exit-code docs/openapi.json
