@@ -1,4 +1,4 @@
-.PHONY: up down reset lint-backend lint-frontend lint test-backend test-frontend test seed backup restore openapi
+.PHONY: up down reset run-backend lint-backend lint-frontend lint test-backend test-frontend test seed backup restore openapi
 
 up:
 	docker compose up -d --build
@@ -8,6 +8,9 @@ down:
 
 reset:
 	docker compose down -v && docker compose up -d --build
+
+run-backend:
+	cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 lint-backend:
 	cd backend && uv run ruff check . && uv run ruff format --check .
