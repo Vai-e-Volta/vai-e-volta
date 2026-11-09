@@ -4,5 +4,228 @@
     "title": "Vai e Volta API",
     "version": "0.1.0"
   },
-  "paths": {}
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Campo já cadastrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados de cadastro inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "fields"
+        ],
+        "title": "ApiErrorDetail"
+      },
+      "ApiErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorDetail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ApiErrorResponse"
+      },
+      "RegistrationRequest": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 3,
+            "pattern": "^[a-z][a-z0-9_]{2,29}$",
+            "title": "Username"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "cpf": {
+            "type": "string",
+            "maxLength": 14,
+            "minLength": 11,
+            "title": "Cpf"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 15,
+            "minLength": 11,
+            "title": "Phone"
+          },
+          "cep": {
+            "type": "string",
+            "pattern": "^\\d{8}$",
+            "title": "Cep"
+          },
+          "street": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Street"
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 1,
+            "title": "Number"
+          },
+          "complement": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complement"
+          },
+          "neighborhood": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Neighborhood"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City"
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2}$",
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "full_name",
+          "username",
+          "email",
+          "password",
+          "cpf",
+          "phone",
+          "cep",
+          "street",
+          "number",
+          "neighborhood",
+          "city",
+          "state"
+        ],
+        "title": "RegistrationRequest"
+      },
+      "RegistrationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "created_at"
+        ],
+        "title": "RegistrationResponse"
+      }
+    }
+  }
 }

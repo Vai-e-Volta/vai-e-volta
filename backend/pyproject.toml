@@ -5,8 +5,11 @@ description = "Backend da plataforma Vai e Volta"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.15,<2",
+    "argon2-cffi>=23.1,<26",
+    "email-validator>=2.2,<3",
     "fastapi>=0.115,<1",
     "psycopg[binary]>=3.2,<4",
+    "pydantic>=2.10,<3",
     "sqlalchemy>=2.0,<3",
     "uvicorn[standard]>=0.34,<1",
 ]
