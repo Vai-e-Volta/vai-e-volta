@@ -38,4 +38,4 @@ endif
 test: test-backend test-frontend
 
 openapi:
-	cd backend && uv run python -m app.scripts.export_openapi > ../docs/openapi.json
+	cd backend && uv run python -m app.scripts.export_openapi ../docs/openapi.json

@@ -34,7 +34,7 @@
             }
           },
           "409": {
-            "description": "Campo j· cadastrado",
+            "description": "Campo j√° cadastrado",
             "content": {
               "application/json": {
                 "schema": {
@@ -44,7 +44,7 @@
             }
           },
           "422": {
-            "description": "Dados de cadastro inv·lidos",
+            "description": "Dados de cadastro inv√°lidos",
             "content": {
               "application/json": {
                 "schema": {
