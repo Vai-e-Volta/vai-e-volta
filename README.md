@@ -38,6 +38,10 @@ uv run alembic downgrade -1
 
 O servidor FastAPI inicia com `make run-backend`. No início da aplicação, o `lifespan` executa `alembic upgrade head`; se a migração falhar, o servidor não inicia. Revise toda migração gerada antes de aplicá-la.
 
+A migração `H001-1` cria `users`, incluindo identificadores únicos, endereço de retirada,
+controle de versão do token e datas de exclusão/anonimização. O banco aplica restrições de
+formato e unicidade; regras completas de cadastro permanecem na API.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
