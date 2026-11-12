@@ -3,40 +3,59 @@
 Plataforma de locação entre pessoas (P2P) de itens ordinários. Projeto da disciplina
 Projeto e Desenvolvimento de Software II (FURG).
 
-## Como executar
+## Como executar localmente
 
-Requisito: apenas Docker (com Compose v2) instalado.
+Requisitos: Docker Desktop com Compose v2, GNU Make e `uv` instalado.
 
-```bash
-cp .env.example .env      # troque POSTGRES_PASSWORD e JWT_SECRET
-make up                   # sobe db, backend, worker e web
-make seed                 # dados de exemplo (só em desenvolvimento)
+No Windows, instale o GNU Make uma vez pelo WinGet:
+
+```powershell
+winget install --id ezwinports.make --exact
 ```
 
-A aplicação abre em http://localhost:8080.
+Depois de instalar, abra um novo terminal. Copie `.env.example` para `.env`, mantendo as
+credenciais locais de desenvolvimento, e execute:
+
+```powershell
+Copy-Item .env.example .env
+make up
+```
+
+O Compose sobe PostgreSQL 18 e a API FastAPI. A API aplica as migrações ao iniciar e fica em
+http://localhost:8000; documentação interativa em http://localhost:8000/docs. O banco usa o
+volume Docker `postgres_data`, montado no diretório de dados recomendado pela imagem PostgreSQL 18.
 
 ## Comandos
 
 | Ação | Comando |
 |---|---|
-| Subir | `make up` |
-| Parar (mantém dados) | `make down` |
-| Resetar tudo (apaga banco e fotos) | `make reset` |
+| Subir/reconstruir | `make up` |
+| Parar (mantém os dados) | `make down` |
+| Apagar o banco local e subir novamente | `make reset` |
 | Lint e testes | `make lint` · `make test` |
 | Exportar contrato OpenAPI | `make openapi` |
-| Backup · restauração | `make backup` · `make restore DIR=backups/<carimbo>` |
+| Rodar só a API no host | `make run-backend` |
+
+`make test` usa sempre um container PostgreSQL temporário na máquina do desenvolvedor, mesmo que
+`DATABASE_URL` esteja definido no shell. Assim, os testes que revertem migrações não alteram o banco
+persistentemente usado pelo Compose. No CI, o runner usa o serviço PostgreSQL descartável do job.
+
+O frontend ainda não foi criado; por isso os alvos `lint-frontend` e `test-frontend` informam que
+foram ignorados até existir `frontend/package.json`.
 
 ## Banco de dados e migrações
 
 O backend usa `DATABASE_URL` para se conectar ao PostgreSQL. No diretório `backend`, use:
 
-```bash
+```powershell
 uv run alembic revision --autogenerate -m "descricao_da_migracao"
 uv run alembic upgrade head
 uv run alembic downgrade -1
 ```
 
-O servidor FastAPI inicia com `make run-backend`. No início da aplicação, o `lifespan` executa `alembic upgrade head`; se a migração falhar, o servidor não inicia. Revise toda migração gerada antes de aplicá-la.
+A migração `H001-1` cria `users`, incluindo identificadores únicos, endereço de retirada,
+controle de versão do token e datas de exclusão/anonimização. O banco aplica restrições de
+formato e unicidade; regras completas de cadastro permanecem na API.
 
 ## Documentação
 
