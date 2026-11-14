@@ -34,7 +34,9 @@ describe('mapa de rotas', () => {
       { route: '/alugueis' },
     );
 
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('from')).toHaveTextContent('/alugueis');
   });
 

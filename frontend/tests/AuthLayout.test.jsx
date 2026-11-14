@@ -31,7 +31,7 @@ describe('abas de acesso', () => {
     mockAnonymous();
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />, { route: '/login' });
-    await screen.findByRole('heading', { name: 'Entrar' });
+    await screen.findByRole('heading', { name: 'Que bom te ver de novo!' });
 
     await user.click(screen.getByRole('tab', { name: 'Criar conta' }));
 
@@ -42,7 +42,7 @@ describe('abas de acesso', () => {
     mockAnonymous();
     const user = userEvent.setup();
     renderWithProviders(<AppRoutes />, { route: '/login' });
-    await screen.findByRole('heading', { name: 'Entrar' });
+    await screen.findByRole('heading', { name: 'Que bom te ver de novo!' });
 
     screen.getByRole('tab', { name: 'Entrar' }).focus();
     await user.keyboard('{ArrowRight}');
@@ -51,7 +51,9 @@ describe('abas de acesso', () => {
     expect(screen.getByRole('tab', { name: 'Criar conta' })).toHaveFocus();
 
     await user.keyboard('{ArrowLeft}');
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Entrar' })).toHaveFocus();
   });
 });

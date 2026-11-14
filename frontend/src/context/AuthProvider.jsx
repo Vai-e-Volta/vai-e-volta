@@ -36,12 +36,25 @@ export function AuthProvider({ children }) {
     queryClient.setQueryData(SESSION_QUERY_KEY, null);
   }, [queryClient]);
 
+  // Depois do login o cookie já existe: busca o usuário de novo em /api/auth/me.
+  const refreshSession = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY }),
+    [queryClient],
+  );
+
   // Em qualquer 401 a sessão é limpa; as rotas privadas levam então ao /login (RN-13).
   useEffect(() => setUnauthorizedHandler(clearSession), [clearSession]);
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, isLoading: isPending, setUser, clearSession }),
-    [user, isPending, setUser, clearSession],
+    () => ({
+      user,
+      isAuthenticated: user !== null,
+      isLoading: isPending,
+      setUser,
+      clearSession,
+      refreshSession,
+    }),
+    [user, isPending, setUser, clearSession, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

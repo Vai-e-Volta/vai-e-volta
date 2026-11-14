@@ -20,7 +20,9 @@ describe('sessão', () => {
       await api.get('/notifications').catch(() => {});
     });
 
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
   });
 
   it('API indisponível na verificação inicial trata a pessoa como não logada', async () => {
@@ -28,6 +30,8 @@ describe('sessão', () => {
 
     renderWithProviders(<AppRoutes />, { route: '/' });
 
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
   });
 });
