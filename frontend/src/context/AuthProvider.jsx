@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { getCurrentUser, setUnauthorizedHandler } from '../services/api';
 import { AuthContext } from './authContext';
 
-export const SESSION_QUERY_KEY = ['auth', 'me'];
+const SESSION_QUERY_KEY = ['auth', 'me'];
 
 async function fetchSession() {
   try {
