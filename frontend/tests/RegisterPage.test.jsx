@@ -23,18 +23,27 @@ function registerCalls(fetchMock) {
 async function renderRegisterPage() {
   const user = userEvent.setup();
   renderWithProviders(<AppRoutes />, { route: '/cadastro' });
-  await screen.findByRole('heading', { name: 'Criar conta' });
+  await screen.findByRole('heading', { name: 'Crie sua conta' });
   return user;
 }
 
+const next = (user) => user.click(screen.getByRole('button', { name: 'Continuar' }));
+const submit = (user) => user.click(screen.getByRole('button', { name: 'Criar conta' }));
+
 // Dados fictícios.
-async function fillValidForm(user) {
+async function fillPersonal(user) {
   await user.type(screen.getByLabelText(/Nome completo/), 'Ana Teste');
   await user.type(screen.getByLabelText(/^CPF/), '52998224725');
   await user.type(screen.getByLabelText(/Telefone celular/), '53999990000');
+}
+
+async function fillAccess(user) {
   await user.type(screen.getByLabelText(/Nome de usuário/), 'ana_teste');
   await user.type(screen.getByLabelText(/E-mail/), 'ana@example.com');
   await user.type(screen.getByLabelText(/^Senha/), 'Senha@123');
+}
+
+async function fillAddress(user) {
   await user.type(screen.getByLabelText(/^CEP/), '96200000');
   await user.type(screen.getByLabelText(/^Rua/), 'Rua Exemplo');
   await user.type(screen.getByLabelText(/^Número/), '100');
@@ -43,69 +52,108 @@ async function fillValidForm(user) {
   await user.selectOptions(screen.getByLabelText(/^UF/), 'RS');
 }
 
-describe('tela de cadastro (H-001)', () => {
-  it('F-01: mostra todos os campos do contrato, com complemento opcional', async () => {
-    mockApi(() => jsonResponse(201, {}));
-    await renderRegisterPage();
+async function fillAll(user) {
+  await fillPersonal(user);
+  await next(user);
+  await fillAccess(user);
+  await next(user);
+  await fillAddress(user);
+}
 
-    for (const label of [
-      /Nome completo/,
-      /^CPF/,
-      /Telefone celular/,
-      /Nome de usuário/,
-      /E-mail/,
-      /^Senha/,
-      /^CEP/,
-      /^Rua/,
-      /^Número/,
-      /^Bairro/,
-      /^Cidade/,
-      /^UF/,
-    ]) {
+describe('tela de cadastro (H-001)', () => {
+  it('F-01: as etapas mostram todos os campos do contrato, com complemento opcional', async () => {
+    mockApi(() => jsonResponse(201, {}));
+    const user = await renderRegisterPage();
+
+    expect(screen.getByRole('heading', { name: 'Dados pessoais' })).toBeInTheDocument();
+    for (const label of [/Nome completo/, /^CPF/, /Telefone celular/]) {
+      expect(screen.getByLabelText(label)).toBeRequired();
+    }
+
+    await fillPersonal(user);
+    await next(user);
+    expect(screen.getByRole('heading', { name: 'Acesso' })).toHaveFocus();
+    for (const label of [/Nome de usuário/, /E-mail/, /^Senha/]) {
+      expect(screen.getByLabelText(label)).toBeRequired();
+    }
+    expect(screen.getByLabelText(/^Senha/)).toHaveAttribute('type', 'password');
+
+    await fillAccess(user);
+    await next(user);
+    expect(screen.getByRole('heading', { name: 'Endereço' })).toBeInTheDocument();
+    for (const label of [/^CEP/, /^Rua/, /^Número/, /^Bairro/, /^Cidade/, /^UF/]) {
       expect(screen.getByLabelText(label)).toBeRequired();
     }
     expect(screen.getByLabelText(/Complemento/)).not.toBeRequired();
-    expect(screen.getByLabelText(/^Senha/)).toHaveAttribute('type', 'password');
   });
 
   it('aplica máscara de CPF, telefone e CEP', async () => {
     mockApi(() => jsonResponse(201, {}));
     const user = await renderRegisterPage();
 
-    await user.type(screen.getByLabelText(/^CPF/), '52998224725');
-    await user.type(screen.getByLabelText(/Telefone celular/), '53999990000');
-    await user.type(screen.getByLabelText(/^CEP/), '96200000');
-
+    await fillPersonal(user);
     expect(screen.getByLabelText(/^CPF/)).toHaveValue('529.982.247-25');
     expect(screen.getByLabelText(/Telefone celular/)).toHaveValue('(53) 99999-0000');
+
+    await next(user);
+    await fillAccess(user);
+    await next(user);
+    await user.type(screen.getByLabelText(/^CEP/), '96200000');
     expect(screen.getByLabelText(/^CEP/)).toHaveValue('96200-000');
   });
 
-  it('F-04: valida na tela, mostra o erro no campo e não chama a API', async () => {
+  it('F-04: não avança com erro na etapa, mostra o erro no campo e não chama a API', async () => {
     const fetchMock = mockApi(() => jsonResponse(201, {}));
     const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.clear(screen.getByLabelText(/^CPF/));
+    await user.type(screen.getByLabelText(/Nome completo/), 'Ana Teste');
     await user.type(screen.getByLabelText(/^CPF/), '11111111111');
-    await user.clear(screen.getByLabelText(/^Senha/));
-    await user.type(screen.getByLabelText(/^Senha/), 'fraca');
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await next(user);
 
+    expect(screen.getByRole('heading', { name: 'Dados pessoais' })).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Revise os campos destacados.');
     expect(screen.getByLabelText(/^CPF/)).toHaveAccessibleDescription('CPF inválido.');
+    expect(screen.getByLabelText(/^CPF/)).toHaveFocus();
+    expect(screen.getByLabelText(/Telefone celular/)).toHaveAccessibleDescription(
+      'Campo obrigatório.',
+    );
+    expect(registerCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('valida a senha na etapa de acesso', async () => {
+    mockApi(() => jsonResponse(201, {}));
+    const user = await renderRegisterPage();
+
+    await fillPersonal(user);
+    await next(user);
+    await user.type(screen.getByLabelText(/Nome de usuário/), 'ana_teste');
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@example.com');
+    await user.type(screen.getByLabelText(/^Senha/), 'fraca');
+    await next(user);
+
     expect(screen.getByLabelText(/^Senha/)).toHaveAccessibleDescription(
       /Use de 8 a 128 caracteres/,
     );
-    expect(screen.getByLabelText(/^CPF/)).toHaveFocus();
-    expect(registerCalls(fetchMock)).toHaveLength(0);
+    expect(screen.getByLabelText(/^Senha/)).toHaveFocus();
+  });
+
+  it('Voltar mantém os dados já preenchidos', async () => {
+    mockApi(() => jsonResponse(201, {}));
+    const user = await renderRegisterPage();
+
+    await fillPersonal(user);
+    await next(user);
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(screen.getByRole('heading', { name: 'Dados pessoais' })).toHaveFocus();
+    expect(screen.getByLabelText(/Nome completo/)).toHaveValue('Ana Teste');
   });
 
   it('limpa o erro do campo quando a pessoa o corrige', async () => {
     mockApi(() => jsonResponse(201, {}));
     const user = await renderRegisterPage();
 
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await next(user);
     expect(screen.getByLabelText(/Nome completo/)).toHaveAttribute('aria-invalid', 'true');
 
     await user.type(screen.getByLabelText(/Nome completo/), 'Ana');
@@ -118,8 +166,8 @@ describe('tela de cadastro (H-001)', () => {
     );
     const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await fillAll(user);
+    await submit(user);
 
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
     const [[, options]] = registerCalls(fetchMock);
@@ -141,30 +189,33 @@ describe('tela de cadastro (H-001)', () => {
   });
 
   it.each([
-    ['email', /E-mail/, 'Este e-mail já está cadastrado.'],
-    ['cpf', /^CPF/, 'Este CPF já está cadastrado.'],
-    ['username', /Nome de usuário/, 'Este nome de usuário já está em uso.'],
-  ])('F-02 / RN-09: 409 FIELD_IN_USE indica %s em uso', async (field, label, message) => {
-    mockApi(() =>
-      jsonResponse(409, {
-        error: {
-          code: 'FIELD_IN_USE',
-          message: 'Um dos campos já está em uso.',
-          fields: { [field]: 'Este campo já está cadastrado.' },
-        },
-      }),
-    );
-    const user = await renderRegisterPage();
+    ['email', /E-mail/, 'Acesso', 'Este e-mail já está cadastrado.'],
+    ['cpf', /^CPF/, 'Dados pessoais', 'Este CPF já está cadastrado.'],
+    ['username', /Nome de usuário/, 'Acesso', 'Este nome de usuário já está em uso.'],
+  ])(
+    'F-02 / RN-09: 409 FIELD_IN_USE volta à etapa e indica %s em uso',
+    async (field, label, stepTitle, message) => {
+      mockApi(() =>
+        jsonResponse(409, {
+          error: {
+            code: 'FIELD_IN_USE',
+            message: 'Um dos campos já está em uso.',
+            fields: { [field]: 'Este campo já está cadastrado.' },
+          },
+        }),
+      );
+      const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+      await fillAll(user);
+      await submit(user);
 
-    const input = screen.getByLabelText(label);
-    await vi.waitFor(() => expect(input).toHaveAccessibleDescription(new RegExp(message)));
-    expect(input).toHaveAttribute('aria-invalid', 'true');
-    expect(input).toHaveFocus();
-    expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeInTheDocument();
-  });
+      expect(await screen.findByRole('heading', { name: stepTitle })).toBeInTheDocument();
+      const input = screen.getByLabelText(label);
+      expect(input).toHaveAccessibleDescription(new RegExp(message));
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      await vi.waitFor(() => expect(input).toHaveFocus());
+    },
+  );
 
   it('mostra no campo os erros 422 vindos da API', async () => {
     mockApi(() =>
@@ -178,8 +229,8 @@ describe('tela de cadastro (H-001)', () => {
     );
     const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await fillAll(user);
+    await submit(user);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Revise os campos informados.');
     expect(screen.getByLabelText(/Telefone celular/)).toHaveAccessibleDescription(
@@ -191,8 +242,8 @@ describe('tela de cadastro (H-001)', () => {
     mockApi(() => new Response('Internal Server Error', { status: 500 }));
     const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await fillAll(user);
+    await submit(user);
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Não foi possível concluir a ação. Tente novamente.');
@@ -209,18 +260,11 @@ describe('tela de cadastro (H-001)', () => {
     );
     const user = await renderRegisterPage();
 
-    await fillValidForm(user);
-    await user.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await fillAll(user);
+    await submit(user);
 
     expect(await screen.findByRole('button', { name: 'Criando conta…' })).toBeDisabled();
     resolveRegister();
     expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
-  });
-
-  it('tem link para o login', async () => {
-    mockApi(() => jsonResponse(201, {}));
-    await renderRegisterPage();
-
-    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
   });
 });
