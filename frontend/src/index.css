@@ -35,3 +35,25 @@
     @apply bg-canvas text-slate-100 antialiased;
   }
 }
+
+/* Itens circulando no laço "vai e volta" da tela de acesso. */
+.loop-chip {
+  offset-path: path('M 20 160 C 20 0, 400 0, 400 160 C 400 320, 20 320, 20 160 Z');
+  offset-rotate: 0deg;
+  animation: loop-travel 18s linear infinite;
+}
+
+@keyframes loop-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loop-chip {
+    animation: none;
+  }
+}
