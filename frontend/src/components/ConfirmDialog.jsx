@@ -55,11 +55,11 @@ export default function ConfirmDialog({
   }
 
   const confirmColor = destructive
-    ? 'bg-red-700 hover:bg-red-800 focus-visible:outline-red-700'
-    : 'bg-emerald-700 hover:bg-emerald-800 focus-visible:outline-emerald-700';
+    ? 'bg-red-400 text-ink hover:bg-red-300 focus-visible:ring-red-400'
+    : 'bg-accent text-ink hover:bg-accent-hover focus-visible:ring-accent';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
       <div
         ref={dialogRef}
         role="alertdialog"
@@ -67,13 +67,13 @@ export default function ConfirmDialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-2xl shadow-black/50"
       >
-        <h2 id={titleId} className="text-lg font-semibold text-slate-900">
+        <h2 id={titleId} className="text-lg font-semibold tracking-tight text-white">
           {title}
         </h2>
         {description && (
-          <p id={descriptionId} className="mt-2 text-slate-700">
+          <p id={descriptionId} className="mt-2 text-slate-300">
             {description}
           </p>
         )}
@@ -83,7 +83,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-md border border-slate-400 px-4 py-2 font-medium text-slate-800 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 disabled:opacity-60"
+            className="rounded-lg border border-line px-4 py-2.5 font-medium text-slate-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
           >
             {cancelLabel}
           </button>
@@ -91,7 +91,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`rounded-md px-4 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60 ${confirmColor}`}
+            className={`rounded-lg px-4 py-2.5 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60 ${confirmColor}`}
           >
             {confirmLabel}
           </button>
