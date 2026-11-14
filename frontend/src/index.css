@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+/*
+ * Paleta do Vai e Volta (tema escuro). Contraste verificado (WCAG AA):
+ * - texto slate-100 sobre canvas/surface ............ > 13:1
+ * - accent (#F9B17A) sobre surface .................. 8,1:1 (links e destaques)
+ * - ink (#0F172A) sobre accent (botão primário) ..... 10:1
+ * - placeholder slate-400 sobre field ............... 6,7:1
+ * - erro red-300 sobre surface ...................... 7,7:1
+ */
+@theme {
+  --color-canvas: #0f172a;
+  --color-surface: #1e293b;
+  --color-panel: #141926;
+  --color-field: #151b2b;
+  --color-line: #334155;
+  --color-accent: #f9b17a;
+  --color-accent-hover: #fcc9a0;
+  --color-flow: #5eead4;
+  --color-ink: #0f172a;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+  }
+
+  body {
+    @apply bg-canvas text-slate-100 antialiased;
+  }
+}
