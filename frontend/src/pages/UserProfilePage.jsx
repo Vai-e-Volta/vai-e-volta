@@ -34,7 +34,7 @@ export default function UserProfilePage() {
         </p>
         <Link
           to="/"
-          className="mt-8 inline-block rounded-lg bg-accent px-5 py-2.5 font-semibold text-ink hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          className="mt-8 inline-block rounded-lg bg-flow px-5 py-2.5 font-semibold text-ink hover:bg-flow-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-flow focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
         >
           Voltar ao início
         </Link>
