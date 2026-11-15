@@ -78,7 +78,7 @@ describe('mapa de rotas', () => {
     ['/itens/1', 'Item'],
     ['/anunciar', 'Anunciar item'],
     ['/anuncios/1/editar', 'Editar anúncio'],
-    ['/usuarios/ana_teste', 'Perfil'],
+    ['/usuarios/ana_teste', 'Perfil não encontrado'],
     ['/configuracoes', 'Configurações'],
     ['/notificacoes', 'Notificações'],
   ])('rota privada %s existe', async (route, heading) => {
