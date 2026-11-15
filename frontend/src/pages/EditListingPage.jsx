@@ -16,7 +16,11 @@ function Message({ title, text, id }) {
       <p className="mt-2 text-slate-400">{text}</p>
       <Link
         to={id ? `/itens/${id}` : '/'}
-        className="mt-8 inline-block rounded-lg bg-accent px-5 py-2.5 font-semibold text-ink hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+        className={`mt-8 inline-block rounded-lg px-5 py-2.5 font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
+          id
+            ? 'bg-accent hover:bg-accent-hover focus-visible:ring-accent'
+            : 'bg-flow hover:bg-flow-hover focus-visible:ring-flow'
+        }`}
       >
         {id ? 'Ver anúncio' : 'Voltar ao início'}
       </Link>
