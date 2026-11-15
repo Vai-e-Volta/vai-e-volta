@@ -10,3 +10,13 @@ export async function getCategories() {
 export function createListing(formData) {
   return api.post('/listings', formData);
 }
+
+/** Anúncio (F-28, F-31): GET /api/listings/{id}. */
+export function getListing(id) {
+  return api.get(`/listings/${encodeURIComponent(id)}`);
+}
+
+/** Editar anúncio (F-41): PATCH /api/listings/{id} em multipart, só com o que mudou. */
+export function updateListing(id, formData) {
+  return api.patch(`/listings/${encodeURIComponent(id)}`, formData);
+}

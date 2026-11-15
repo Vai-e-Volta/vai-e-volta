@@ -77,7 +77,7 @@ describe('mapa de rotas', () => {
   it.each([
     ['/itens/1', 'Item'],
     ['/anunciar', 'Anunciar item'],
-    ['/anuncios/1/editar', 'Editar anúncio'],
+    ['/anuncios/1/editar', 'Anúncio não encontrado'],
     ['/usuarios/ana_teste', 'Perfil não encontrado'],
     ['/configuracoes', 'Configurações'],
     ['/notificacoes', 'Notificações'],

@@ -213,3 +213,91 @@ export function listingServerErrors(error) {
   }
   return errors;
 }
+
+export const KEEP_PHOTOS_FIELD = 'keep_photo_ids[]';
+
+/** Foto salva vinda da API → item do PhotoUploader. */
+function savedPhoto(photo) {
+  return {
+    key: `saved-${photo.id}`,
+    id: photo.id,
+    url: photo.url ?? `/uploads/${photo.filename}`,
+  };
+}
+
+/**
+ * Anúncio de GET /api/listings/{id} (visão do dono) → valores do formulário e fotos.
+ * Aceita a categoria como `category_id` ou `category: {id}` e tags como texto ou `{name}`.
+ */
+export function listingToForm(listing) {
+  const text = (value) => (value === null || value === undefined ? '' : String(value));
+  const values = {
+    title: text(listing.title),
+    description: text(listing.description),
+    category_id: text(listing.category_id ?? listing.category?.id),
+    tags: (listing.tags ?? []).map((tag) => (typeof tag === 'string' ? tag : tag.name)),
+    daily_price: listing.daily_price ? text(listing.daily_price).replace('.', ',') : '',
+    max_days: text(listing.max_days),
+    available_from: text(listing.available_from),
+    available_until: text(listing.available_until),
+    pickup_cep: formatCep(text(listing.pickup_cep)),
+    pickup_street: text(listing.pickup_street),
+    pickup_number: text(listing.pickup_number),
+    pickup_complement: text(listing.pickup_complement),
+    pickup_neighborhood: text(listing.pickup_neighborhood),
+    pickup_city: text(listing.pickup_city),
+    pickup_state: text(listing.pickup_state),
+  };
+  return { values, photos: (listing.photos ?? []).map(savedPhoto) };
+}
+
+const SCALAR_FIELDS = [
+  'title',
+  'description',
+  'category_id',
+  'daily_price',
+  'max_days',
+  'available_from',
+  'available_until',
+];
+
+/**
+ * Corpo multipart de PATCH /api/listings/{id}: só o que mudou (seção 10). Tags e local
+ * de retirada, quando enviados, substituem os atuais; fotos vão como keep_photo_ids[]
+ * (salvas, na ordem) e photos[] (novas, ao final). Retorna null se nada mudou.
+ */
+export function toListingUpdateFormData(values, initial, photos, initialPhotos) {
+  const next = toListingFormData(values, []);
+  const before = toListingFormData(initial, []);
+  const data = new FormData();
+  let changed = false;
+
+  for (const field of SCALAR_FIELDS) {
+    if (next.get(field) !== before.get(field)) {
+      data.append(field, next.get(field));
+      changed = true;
+    }
+  }
+
+  const tags = next.getAll(TAGS_FIELD);
+  if (tags.join('\n') !== before.getAll(TAGS_FIELD).join('\n')) {
+    for (const tag of tags) data.append(TAGS_FIELD, tag);
+    changed = true;
+  }
+
+  if (PICKUP_FIELDS.some((field) => next.get(field) !== before.get(field))) {
+    for (const field of PICKUP_FIELDS) if (next.has(field)) data.append(field, next.get(field));
+    changed = true;
+  }
+
+  const photoKeys = photos.map((photo) => photo.key).join('\n');
+  if (photoKeys !== initialPhotos.map((photo) => photo.key).join('\n')) {
+    for (const photo of photos) {
+      if (photo.file) data.append(PHOTOS_FIELD, photo.file);
+      else data.append(KEEP_PHOTOS_FIELD, String(photo.id));
+    }
+    changed = true;
+  }
+
+  return changed ? data : null;
+}
