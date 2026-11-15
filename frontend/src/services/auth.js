@@ -12,3 +12,8 @@ export function registerUser(payload) {
 export function login({ identifier, password }) {
   return api.post('/auth/login', { identifier, password }, { handleUnauthorized: false });
 }
+
+/** Sair (F-08): POST /api/auth/logout. A API apaga o cookie de sessão. */
+export function logout() {
+  return api.post('/auth/logout', undefined, { handleUnauthorized: false });
+}
