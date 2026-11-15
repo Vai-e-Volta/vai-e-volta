@@ -8,9 +8,18 @@ import { login } from '../services/auth';
 
 const EMPTY = { identifier: '', password: '' };
 
+/** Mensagem de bloqueio (RN-14) com o tempo do Retry-After, arredondado para minutos. */
+function lockedMessage(retryAfter) {
+  if (!retryAfter) return 'Muitas tentativas de login. Aguarde alguns minutos e tente de novo.';
+  const minutes = Math.max(1, Math.ceil(retryAfter / 60));
+  const unit = minutes === 1 ? 'minuto' : 'minutos';
+  return `Muitas tentativas de login. Tente de novo em ${minutes} ${unit}.`;
+}
+
 /**
  * Login (F-05 a F-07): e-mail ou nome de usuário e senha. A mensagem de credencial
- * incorreta vem da API e é única (RN-12); o bloqueio por tentativas responde 429 (RN-14).
+ * incorreta vem da API e é única (RN-12); o bloqueio por tentativas responde 429 com
+ * Retry-After (RN-14).
  */
 export default function LoginPage() {
   const location = useLocation();
@@ -26,7 +35,7 @@ export default function LoginPage() {
     // Com a sessão carregada, a rota pública leva ao destino guardado ou a /.
     onSuccess: () => refreshSession(),
     onError: (error) => {
-      setFormError(error.message);
+      setFormError(error.status === 429 ? lockedMessage(error.retryAfter) : error.message);
       setValues((current) => ({ ...current, password: '' }));
       formRef.current?.elements.namedItem('password')?.focus();
     },

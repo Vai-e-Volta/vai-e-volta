@@ -76,17 +76,34 @@ describe('tela de login (H-002)', () => {
     expect(screen.getByRole('heading', { name: 'Que bom te ver de novo!' })).toBeInTheDocument();
   });
 
-  it('RN-14: mostra a mensagem de bloqueio por tentativas (429)', async () => {
-    mockApi(() =>
-      jsonResponse(429, {
-        error: { code: 'LOGIN_LOCKED', message: 'Muitas tentativas. Tente em 15 minutos.' },
-      }),
+  it('RN-14: no bloqueio (429) mostra quanto falta usando o Retry-After', async () => {
+    mockApi(
+      () =>
+        new Response(
+          JSON.stringify({ error: { code: 'LOGIN_LOCKED', message: 'Muitas tentativas.' } }),
+          { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '840' } },
+        ),
     );
     const user = await renderLogin();
 
     await fillAndSubmit(user);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Muitas tentativas.');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Muitas tentativas de login. Tente de novo em 14 minutos.',
+    );
+  });
+
+  it('RN-14: sem Retry-After, o bloqueio ainda mostra uma mensagem clara', async () => {
+    mockApi(() =>
+      jsonResponse(429, { error: { code: 'LOGIN_LOCKED', message: 'Muitas tentativas.' } }),
+    );
+    const user = await renderLogin();
+
+    await fillAndSubmit(user);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Muitas tentativas de login. Aguarde alguns minutos e tente de novo.',
+    );
   });
 
   it('campos vazios mostram erro sem chamar a API', async () => {
