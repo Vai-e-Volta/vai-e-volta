@@ -321,7 +321,7 @@ export default function RegisterPage() {
               type="button"
               onClick={() => goToStep(step - 1)}
               disabled={mutation.isPending}
-              className="rounded-lg px-4 py-3 font-medium text-slate-300 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:opacity-60"
+              className="rounded-lg border border-flow/40 px-4 py-3 font-medium text-flow hover:bg-flow/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-flow disabled:opacity-60"
             >
               Voltar
             </button>
