@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const registered = location.state?.registered === true;
+  const accountDeleted = location.state?.accountDeleted === true;
 
   const mutation = useMutation({
     mutationFn: login,
@@ -76,6 +77,15 @@ export default function LoginPage() {
           className="mt-6 rounded-lg border border-flow/30 bg-flow/10 px-4 py-3 text-sm text-teal-100"
         >
           Conta criada! Agora é só entrar com seus dados.
+        </div>
+      )}
+
+      {accountDeleted && !formError && (
+        <div
+          role="status"
+          className="mt-6 rounded-lg border border-line bg-panel px-4 py-3 text-sm text-slate-300"
+        >
+          Sua conta foi excluída. Se entrar de novo em até 1 ano, ela é reativada.
         </div>
       )}
 
