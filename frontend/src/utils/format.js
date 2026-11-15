@@ -27,3 +27,15 @@ export function formatDate(value) {
   if (Number.isNaN(date.getTime())) return '';
   return dateFormatter.format(date);
 }
+
+const isoDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: TIME_ZONE,
+});
+
+/** Data de hoje em America/Sao_Paulo no formato AAAA-MM-DD (RN-69). */
+export function todayIso(now = new Date()) {
+  return isoDateFormatter.format(now);
+}
