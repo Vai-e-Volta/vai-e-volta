@@ -200,3 +200,79 @@ export function toRegistrationPayload(values) {
     state: values.state,
   };
 }
+
+const FIELD_IN_USE_MESSAGES = {
+  email: 'Este e-mail já está cadastrado.',
+  cpf: 'Este CPF já está cadastrado.',
+  username: 'Este nome de usuário já está em uso.',
+};
+
+/**
+ * Erros por campo vindos da API (422 ou 409 FIELD_IN_USE, RN-09), só dos campos do
+ * cadastro. No 409, cada campo recebe uma mensagem que diz qual dado já está em uso.
+ */
+export function serverFieldErrors(error) {
+  const fields =
+    error.code === 'FIELD_IN_USE'
+      ? Object.fromEntries(
+          Object.entries(error.fields).map(([field, message]) => [
+            field,
+            FIELD_IN_USE_MESSAGES[field] ?? message,
+          ]),
+        )
+      : error.fields;
+  return Object.fromEntries(
+    Object.entries(fields).filter(([field]) => field in EMPTY_REGISTRATION),
+  );
+}
+
+// Edição de dados (F-11): os mesmos campos e regras do cadastro, sem a senha, que tem
+// formulário próprio (F-12).
+
+/** Valores do formulário de edição a partir do usuário de GET /api/auth/me, com máscaras. */
+export function profileFromUser(user) {
+  const text = (value) => (value === null || value === undefined ? '' : String(value));
+  return {
+    full_name: text(user?.full_name),
+    username: text(user?.username),
+    email: text(user?.email),
+    cpf: formatCpf(text(user?.cpf)),
+    phone: formatPhone(text(user?.phone)),
+    cep: formatCep(text(user?.cep)),
+    street: text(user?.street),
+    number: text(user?.number),
+    complement: text(user?.complement),
+    neighborhood: text(user?.neighborhood),
+    city: text(user?.city),
+    state: text(user?.state),
+  };
+}
+
+/** Mesma validação do cadastro, sem o campo de senha. */
+export function validateProfile(values) {
+  const errors = validateRegistration({ ...values, password: '' });
+  delete errors.password;
+  return errors;
+}
+
+function profilePayload(values) {
+  const payload = toRegistrationPayload({ ...values, password: '' });
+  delete payload.password;
+  return payload;
+}
+
+/**
+ * Corpo de PATCH /api/me: só os campos alterados, sem máscaras. Complemento apagado
+ * vai como null.
+ */
+export function toProfilePayload(values, initial) {
+  const after = profilePayload(values);
+  const before = profilePayload(initial);
+  const changes = {};
+  for (const field of Object.keys(EMPTY_REGISTRATION)) {
+    if (field === 'password') continue;
+    const value = after[field] ?? null;
+    if (value !== (before[field] ?? null)) changes[field] = value;
+  }
+  return changes;
+}
