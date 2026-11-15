@@ -47,7 +47,8 @@ describe('sessão', () => {
     await screen.findByRole('heading', { name: 'Aluguéis' });
     queryClient.setQueryData(['rentals', 'renter', 'active'], [{ id: 'r1' }]);
 
-    await user.click(screen.getByRole('button', { name: 'Sair' }));
+    await user.click(screen.getByRole('button', { name: /Menu da conta/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sair' }));
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Que bom te ver de novo!' })).toBeInTheDocument(),
@@ -55,7 +56,7 @@ describe('sessão', () => {
     const [, options] = fetchMock.mock.calls.find(([url]) => url === '/api/auth/logout');
     expect(options.method).toBe('POST');
     expect(queryClient.getQueryData(['rentals', 'renter', 'active'])).toBeUndefined();
-    expect(screen.queryByRole('button', { name: 'Sair' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Menu da conta/ })).not.toBeInTheDocument();
 
     // Depois de sair, entrar de novo não volta para a tela onde a pessoa estava.
     fetchMock.mockImplementation(async (url) => {
@@ -78,14 +79,15 @@ describe('sessão', () => {
     renderWithProviders(<AppRoutes />, { route: '/' });
     await screen.findByRole('heading', { name: 'Itens para alugar' });
 
-    await user.click(screen.getByRole('button', { name: 'Sair' }));
+    await user.click(screen.getByRole('button', { name: /Menu da conta/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sair' }));
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Que bom te ver de novo!' })).toBeInTheDocument(),
     );
   });
 
-  it('páginas públicas não mostram o botão Sair para quem não está logado', async () => {
+  it('páginas públicas não mostram o menu da conta para quem não está logado', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       jsonResponse(401, { error: { code: 'UNAUTHENTICATED', message: 'Faça login.' } }),
     );
@@ -93,6 +95,6 @@ describe('sessão', () => {
     renderWithProviders(<AppRoutes />, { route: '/rota-que-nao-existe' });
 
     expect(await screen.findByRole('heading', { name: /não encontrada/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Sair' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Menu da conta/ })).not.toBeInTheDocument();
   });
 });

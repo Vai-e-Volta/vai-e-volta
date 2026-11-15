@@ -1,18 +1,11 @@
-import { useState } from 'react';
 import { Link, Outlet } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import BrandMark from './BrandMark';
+import ProfileMenu from './ProfileMenu';
 
 /** Layout base das telas logadas: mobile-first, cabeçalho no topo e conteúdo centralizado. */
 export default function Layout() {
-  const { isAuthenticated, logout } = useAuth();
-  const [isLeaving, setIsLeaving] = useState(false);
-
-  async function handleLogout() {
-    setIsLeaving(true);
-    // Sem sessão, a rota privada leva ao /login.
-    await logout();
-  }
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -31,16 +24,7 @@ export default function Layout() {
             <BrandMark />
             Vai e Volta
           </Link>
-          {isAuthenticated && (
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isLeaving}
-              className="rounded-lg border border-line px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-accent hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
-            >
-              {isLeaving ? 'Saindo…' : 'Sair'}
-            </button>
-          )}
+          {isAuthenticated && <ProfileMenu />}
         </div>
       </header>
       <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-10">
