@@ -9,10 +9,13 @@ function photoFromFile(file) {
   return { key: `new-${nextKey}`, file, url: URL.createObjectURL(file) };
 }
 
-const iconButtonClassName =
-  'flex h-8 w-8 items-center justify-center rounded-md bg-black/60 text-white ' +
-  'hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ' +
-  'disabled:opacity-40';
+const iconButtonBase =
+  'flex h-8 w-8 items-center justify-center rounded-md bg-black/60 hover:bg-black/80 ' +
+  'focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40';
+const iconButtonClassName = `${iconButtonBase} text-white focus-visible:ring-accent`;
+// Mover para a esquerda volta (menta); para a direita vai (pêssego).
+const backButtonClassName = `${iconButtonBase} font-bold text-flow focus-visible:ring-flow`;
+const forwardButtonClassName = `${iconButtonBase} font-bold text-accent focus-visible:ring-accent`;
 
 /**
  * Fotos do anúncio (RN-56): de 1 a 5, JPEG, PNG ou WebP, até 5 MB cada, com prévia,
@@ -75,7 +78,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
         De 1 a {MAX_PHOTOS} fotos, JPEG, PNG ou WebP, até {MAX_PHOTO_MB} MB cada. A primeira é a
         capa.
       </p>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {photos.map((photo, index) => {
           const label = `foto ${index + 1}`;
           return (
@@ -100,7 +103,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
                     onClick={() => move(index, index - 1)}
                     disabled={index === 0}
                     aria-label={`Mover ${label} para a esquerda`}
-                    className={iconButtonClassName}
+                    className={backButtonClassName}
                   >
                     <span aria-hidden="true">←</span>
                   </button>
@@ -109,7 +112,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
                     onClick={() => move(index, index + 1)}
                     disabled={index === photos.length - 1}
                     aria-label={`Mover ${label} para a direita`}
-                    className={iconButtonClassName}
+                    className={forwardButtonClassName}
                   >
                     <span aria-hidden="true">→</span>
                   </button>
