@@ -40,8 +40,27 @@ volume Docker `postgres_data`, montado no diretório de dados recomendado pela i
 `DATABASE_URL` esteja definido no shell. Assim, os testes que revertem migrações não alteram o banco
 persistentemente usado pelo Compose. No CI, o runner usa o serviço PostgreSQL descartável do job.
 
-O frontend ainda não foi criado; por isso os alvos `lint-frontend` e `test-frontend` informam que
-foram ignorados até existir `frontend/package.json`.
+## Frontend
+
+SPA em React 19 + Vite, com React Router 7, TanStack Query 5 e Tailwind CSS 4 (JavaScript/JSX),
+em `frontend/`. Requer Node.js 24. Para desenvolver com recarga automática:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+A tela abre em http://localhost:5173. O Vite encaminha `/api` e `/uploads` para a API em
+http://localhost:8000 (suba-a antes com `make up`); para outro endereço, defina
+`VITE_BACKEND_URL`. O código usa só caminhos relativos e acessa a API apenas por
+`src/services/api.js`.
+
+| Ação | Comando (em `frontend/`) |
+|---|---|
+| Lint e formatação | `npm run lint` · `npm run format:check` |
+| Testes (Vitest) | `npm test` |
+| Build de produção | `npm run build` |
 
 ## Banco de dados e migrações
 
