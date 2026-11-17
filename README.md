@@ -79,6 +79,26 @@ nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índic
 `uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
 `rental_overdue` e torna o worker idempotente (`ON CONFLICT DO NOTHING`).
 
+## Worker (tarefas agendadas)
+
+O serviço `worker` do Compose usa a mesma imagem do backend com o comando `python -m app.worker`
+(APScheduler 3.11). A cada ciclo, cada tarefa obtém um lock consultivo do PostgreSQL
+(`pg_try_advisory_lock`); se outra instância estiver com o lock, o ciclo é pulado. Ao final de
+cada ciclo o worker atualiza `/tmp/worker_heartbeat`, e o healthcheck do contêiner
+(`python -m app.worker.healthcheck`) falha se o arquivo tiver mais de 120 s. Logs em JSON, uma
+linha `INFO` por tarefa.
+
+Para criar uma tarefa, registre uma função **idempotente** `(session, now)` em
+`app/worker/tasks.py` (ou em um módulo importado por ele):
+
+```python
+@registry.register("expire_proposals", minutes=1)
+def expire_proposals(session: Session, now: datetime) -> None: ...
+```
+
+`now` é o instante atual em UTC, injetado pelo runner para permitir testes com relógio congelado.
+Para acompanhar: `docker compose logs -f worker`.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
