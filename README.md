@@ -57,6 +57,9 @@ A migração `H001-1` cria `users`, incluindo identificadores únicos, endereço
 controle de versão do token e datas de exclusão/anonimização. O banco aplica restrições de
 formato e unicidade; regras completas de cadastro permanecem na API.
 
+A migração `H002-1` cria `login_attempts` (bloqueio por tentativas, RN-14). O identificador
+fica só como hash SHA-256 do valor normalizado, nunca em claro.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
