@@ -7,17 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 from app.db import Base
-from app.models import (  # noqa: F401
-    Category,
-    Favorite,
-    Listing,
-    ListingPhoto,
-    LoginAttempt,
-    Rental,
-    Tag,
-    User,
-    listing_tags,
-)
+from app.models import LoginAttempt, User  # noqa: F401
 
 config = context.config
 

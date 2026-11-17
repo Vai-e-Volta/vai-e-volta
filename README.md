@@ -40,8 +40,27 @@ volume Docker `postgres_data`, montado no diretório de dados recomendado pela i
 `DATABASE_URL` esteja definido no shell. Assim, os testes que revertem migrações não alteram o banco
 persistentemente usado pelo Compose. No CI, o runner usa o serviço PostgreSQL descartável do job.
 
-O frontend ainda não foi criado; por isso os alvos `lint-frontend` e `test-frontend` informam que
-foram ignorados até existir `frontend/package.json`.
+## Frontend
+
+SPA em React 19 + Vite, com React Router 7, TanStack Query 5 e Tailwind CSS 4 (JavaScript/JSX),
+em `frontend/`. Requer Node.js 24. Para desenvolver com recarga automática:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+A tela abre em http://localhost:5173. O Vite encaminha `/api` e `/uploads` para a API em
+http://localhost:8000 (suba-a antes com `make up`); para outro endereço, defina
+`VITE_BACKEND_URL`. O código usa só caminhos relativos e acessa a API apenas por
+`src/services/api.js`.
+
+| Ação | Comando (em `frontend/`) |
+|---|---|
+| Lint e formatação | `npm run lint` · `npm run format:check` |
+| Testes (Vitest) | `npm test` |
+| Build de produção | `npm run build` |
 
 ## Banco de dados e migrações
 
@@ -59,20 +78,6 @@ formato e unicidade; regras completas de cadastro permanecem na API.
 
 A migração `H002-1` cria `login_attempts` (bloqueio por tentativas, RN-14). O identificador
 fica só como hash SHA-256 do valor normalizado, nunca em claro.
-
-A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
-`listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
-das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
-`available_until ≥ hoje` ficam na API.
-
-A migração `H013-1` cria `favorites` com PK (`user_id`, `listing_id`). O favorito de anúncio
-pausado ou excluído é mantido (RN-31); por isso a FK não tem `ON DELETE CASCADE`.
-
-A migração `H016-1` cria `rentals` (propostas e aluguéis) com a restrição `rentals_no_overlap`
-(`EXCLUDE USING gist`, RN-42): aluguéis `accepted` ou `completed` do mesmo anúncio não se
-sobrepõem, com intervalos inclusivos (devolução no dia 14 libera retirada só no dia 15). Propostas
-`pending` não entram na restrição. `expires_at` é gravado pela API (`created_at` +
-`PROPOSAL_TTL_HOURS`). A duração inclusiva fica em `app/services/rental_period.py` (RN-36).
 
 ## Documentação
 
