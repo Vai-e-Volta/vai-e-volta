@@ -89,27 +89,3 @@ def insert_listing(db: Connection, insert_user: InsertRow) -> InsertRow:
         )
 
     return _insert
-
-
-@pytest.fixture
-def insert_rental(db: Connection, insert_user: InsertRow, insert_listing: InsertRow) -> InsertRow:
-    """Insert a rental (pending by default) and return its id."""
-
-    def _insert(**overrides: Any) -> int:
-        values: dict[str, Any] = {
-            "listing_id": overrides.pop("listing_id", None) or insert_listing(),
-            "renter_id": overrides.pop("renter_id", None) or insert_user(),
-            "start_date": date(2026, 12, 10),
-            "end_date": date(2026, 12, 14),
-            "status": "pending",
-            "daily_price_snapshot": "25.00",
-            "estimated_total": "125.00",
-            "listing_snapshot": '{"title": "Furadeira de impacto"}',
-        } | overrides
-        columns = ", ".join([*values, "expires_at"])
-        params = ", ".join([*(f":{column}" for column in values), "now() + interval '48 hours'"])
-        return db.scalar(
-            text(f"INSERT INTO rentals ({columns}) VALUES ({params}) RETURNING id"), values
-        )
-
-    return _insert
