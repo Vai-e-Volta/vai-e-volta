@@ -20,7 +20,8 @@ COPY alembic ./alembic
 COPY app ./app
 
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app \
-    && chown -R app:app /app /opt/venv
+    && mkdir -p /data/uploads \
+    && chown -R app:app /app /opt/venv /data/uploads
 USER app
 
 EXPOSE 8000

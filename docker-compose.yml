@@ -48,5 +48,35 @@ services:
       retries: 5
       start_period: 20s
 
+  worker:
+    # Mesma imagem do backend, outro comando (Doc. Técnico 7.3). As migrações são aplicadas
+    # pelo backend; por isso o worker só sobe depois que a API estiver saudável.
+    build:
+      context: ./backend
+    command: ["python", "-m", "app.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vaievolta}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}@db:5432/${POSTGRES_DB:-vaievolta}
+      APP_ENV: ${APP_ENV:-dev}
+      PROPOSAL_TTL_HOURS: ${PROPOSAL_TTL_HOURS:-48}
+      ACCOUNT_RETENTION_DAYS: ${ACCOUNT_RETENTION_DAYS:-365}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/data/uploads}
+      TZ: ${TZ:-America/Sao_Paulo}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - uploads:${UPLOAD_DIR:-/data/uploads}
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.worker.healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  uploads:

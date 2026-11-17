@@ -79,6 +79,45 @@ formato e unicidade; regras completas de cadastro permanecem na API.
 A migração `H002-1` cria `login_attempts` (bloqueio por tentativas, RN-14). O identificador
 fica só como hash SHA-256 do valor normalizado, nunca em claro.
 
+A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
+`listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
+das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
+`available_until ≥ hoje` ficam na API.
+
+A migração `H013-1` cria `favorites` com PK (`user_id`, `listing_id`). O favorito de anúncio
+pausado ou excluído é mantido (RN-31); por isso a FK não tem `ON DELETE CASCADE`.
+
+A migração `H016-1` cria `rentals` (propostas e aluguéis) com a restrição `rentals_no_overlap`
+(`EXCLUDE USING gist`, RN-42): aluguéis `accepted` ou `completed` do mesmo anúncio não se
+sobrepõem, com intervalos inclusivos (devolução no dia 14 libera retirada só no dia 15). Propostas
+`pending` não entram na restrição. `expires_at` é gravado pela API (`created_at` +
+`PROPOSAL_TTL_HOURS`). A duração inclusiva fica em `app/services/rental_period.py` (RN-36).
+
+A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
+nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
+`uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
+`rental_overdue` e torna o worker idempotente (`ON CONFLICT DO NOTHING`).
+
+## Worker (tarefas agendadas)
+
+O serviço `worker` do Compose usa a mesma imagem do backend com o comando `python -m app.worker`
+(APScheduler 3.11). A cada ciclo, cada tarefa obtém um lock consultivo do PostgreSQL
+(`pg_try_advisory_lock`); se outra instância estiver com o lock, o ciclo é pulado. Ao final de
+cada ciclo o worker atualiza `/tmp/worker_heartbeat`, e o healthcheck do contêiner
+(`python -m app.worker.healthcheck`) falha se o arquivo tiver mais de 120 s. Logs em JSON, uma
+linha `INFO` por tarefa.
+
+Para criar uma tarefa, registre uma função **idempotente** `(session, now)` em
+`app/worker/tasks.py` (ou em um módulo importado por ele):
+
+```python
+@registry.register("expire_proposals", minutes=1)
+def expire_proposals(session: Session, now: datetime) -> None: ...
+```
+
+`now` é o instante atual em UTC, injetado pelo runner para permitir testes com relógio congelado.
+Para acompanhar: `docker compose logs -f worker`.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
