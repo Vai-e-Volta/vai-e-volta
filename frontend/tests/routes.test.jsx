@@ -34,9 +34,7 @@ describe('mapa de rotas', () => {
       { route: '/alugueis' },
     );
 
-    expect(
-      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
     expect(screen.getByTestId('from')).toHaveTextContent('/alugueis');
   });
 
@@ -62,6 +60,7 @@ describe('mapa de rotas', () => {
     renderWithProviders(<AppRoutes />, { route: '/cadastro' });
 
     expect(await screen.findByRole('heading', { name: 'Crie sua conta' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Criar conta' })).toBeInTheDocument();
   });
 
   it('rota desconhecida mostra a página 404', async () => {
@@ -78,7 +77,7 @@ describe('mapa de rotas', () => {
     ['/itens/1', 'Item'],
     ['/anunciar', 'Anunciar item'],
     ['/anuncios/1/editar', 'Editar anúncio'],
-    ['/usuarios/ana_teste', 'Perfil não encontrado'],
+    ['/usuarios/ana_teste', 'Perfil'],
     ['/configuracoes', 'Configurações'],
     ['/notificacoes', 'Notificações'],
   ])('rota privada %s existe', async (route, heading) => {

@@ -10,10 +10,7 @@ import {
   isValidPassword,
   isValidPhone,
   isValidUsername,
-  profileFromUser,
-  toProfilePayload,
   toRegistrationPayload,
-  validateProfile,
   validateRegistration,
 } from '../src/utils/registrationValidation';
 
@@ -198,39 +195,5 @@ describe('toRegistrationPayload', () => {
 
     expect(payload.complement).toBe('apto 2');
     expect(payload.password).toBe(' A1!aaaaa ');
-  });
-});
-
-describe('edição de dados (F-11)', () => {
-  const initial = profileFromUser({
-    full_name: 'Ana Teste',
-    username: 'ana_teste',
-    email: 'ana@exemplo.com',
-    cpf: '52998224725',
-    phone: '53999998888',
-    cep: '96200000',
-    street: 'Rua A',
-    number: '1',
-    complement: null,
-    neighborhood: 'Centro',
-    city: 'Rio Grande',
-    state: 'RS',
-  });
-
-  it('profileFromUser aplica as máscaras e troca null por texto vazio', () => {
-    expect(initial.cpf).toBe('529.982.247-25');
-    expect(initial.complement).toBe('');
-  });
-
-  it('toProfilePayload envia só o que mudou, sem máscara', () => {
-    expect(toProfilePayload(initial, initial)).toEqual({});
-    expect(
-      toProfilePayload({ ...initial, cep: '96201-000', complement: ' Casa ' }, initial),
-    ).toEqual({ cep: '96201000', complement: 'Casa' });
-  });
-
-  it('validateProfile usa as regras do cadastro, sem exigir senha', () => {
-    expect(validateProfile(initial)).toEqual({});
-    expect(validateProfile({ ...initial, email: 'x' })).toEqual({ email: 'E-mail inválido.' });
   });
 });

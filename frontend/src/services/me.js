@@ -16,11 +16,3 @@ export function changePassword({ currentPassword, newPassword }) {
     { handleUnauthorized: false },
   );
 }
-
-/**
- * Excluir conta (F-13): DELETE /api/me com a senha atual (RN-16). A API apaga o cookie
- * e responde 204. Um 401 aqui é senha incorreta, não sessão expirada.
- */
-export function deleteAccount(password) {
-  return api.delete('/me', { password }, { handleUnauthorized: false });
-}

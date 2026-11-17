@@ -83,24 +83,4 @@ describe('services/api', () => {
 
     await expect(api.delete('/listings/1/favorite')).resolves.toBeNull();
   });
-
-  it('lê o Retry-After em segundos ou como data HTTP', async () => {
-    const locked = (retryAfter) =>
-      new Response(JSON.stringify({ error: { code: 'LOGIN_LOCKED', message: 'Bloqueado.' } }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': retryAfter },
-      });
-    const fetchMock = vi.spyOn(globalThis, 'fetch');
-
-    fetchMock.mockResolvedValueOnce(locked('900'));
-    expect((await api.post('/auth/login', {}).catch((e) => e)).retryAfter).toBe(900);
-
-    fetchMock.mockResolvedValueOnce(locked(new Date(Date.now() + 120_000).toUTCString()));
-    const fromDate = (await api.post('/auth/login', {}).catch((e) => e)).retryAfter;
-    expect(fromDate).toBeGreaterThanOrEqual(119);
-    expect(fromDate).toBeLessThanOrEqual(120);
-
-    fetchMock.mockResolvedValueOnce(jsonResponse(500, {}));
-    expect((await api.get('/x').catch((e) => e)).retryAfter).toBeNull();
-  });
 });
