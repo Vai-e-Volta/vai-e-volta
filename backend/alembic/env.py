@@ -13,6 +13,7 @@ from app.models import (  # noqa: F401
     Listing,
     ListingPhoto,
     LoginAttempt,
+    Rental,
     Tag,
     User,
     listing_tags,
