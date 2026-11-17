@@ -9,6 +9,7 @@ from alembic import context
 from app.db import Base
 from app.models import (  # noqa: F401
     Category,
+    Favorite,
     Listing,
     ListingPhoto,
     LoginAttempt,

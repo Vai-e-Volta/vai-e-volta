@@ -65,6 +65,9 @@ A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `l
 das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
 `available_until ≥ hoje` ficam na API.
 
+A migração `H013-1` cria `favorites` com PK (`user_id`, `listing_id`). O favorito de anúncio
+pausado ou excluído é mantido (RN-31); por isso a FK não tem `ON DELETE CASCADE`.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
