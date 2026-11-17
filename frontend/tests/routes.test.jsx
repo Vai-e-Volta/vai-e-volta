@@ -59,6 +59,7 @@ describe('mapa de rotas', () => {
 
     renderWithProviders(<AppRoutes />, { route: '/cadastro' });
 
+    expect(await screen.findByRole('heading', { name: 'Crie sua conta' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Criar conta' })).toBeInTheDocument();
   });
 

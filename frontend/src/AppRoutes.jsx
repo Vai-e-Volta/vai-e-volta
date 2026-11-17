@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router';
+import AuthLayout from './components/AuthLayout';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 import PublicOnlyRoute from './components/PublicOnlyRoute';
@@ -18,6 +19,13 @@ import UserProfilePage from './pages/UserProfilePage';
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route element={<PublicOnlyRoute />}>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<RegisterPage />} />
+        </Route>
+      </Route>
+      <Route element={<Layout />}>
       <Route element={<Layout />}>
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<LoginPage />} />
