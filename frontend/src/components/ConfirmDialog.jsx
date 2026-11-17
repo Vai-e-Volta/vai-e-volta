@@ -4,9 +4,8 @@ const FOCUSABLE =
   'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
- * Diálogo de confirmação acessível: foco inicial em "Cancelar" (ou no primeiro campo,
- * quando há campos em `children`), Esc fecha, Tab circula dentro do diálogo e o foco
- * volta ao elemento de origem ao fechar. Enter num campo confirma.
+ * Diálogo de confirmação acessível: foco inicial em "Cancelar", Esc fecha,
+ * Tab circula dentro do diálogo e o foco volta ao elemento de origem ao fechar.
  */
 export default function ConfirmDialog({
   open,
@@ -18,7 +17,6 @@ export default function ConfirmDialog({
   busy = false,
   onConfirm,
   onCancel,
-  children,
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -28,8 +26,7 @@ export default function ConfirmDialog({
   useEffect(() => {
     if (!open) return undefined;
     const previouslyFocused = document.activeElement;
-    const firstField = dialogRef.current?.querySelector('input, select, textarea');
-    (firstField ?? cancelRef.current)?.focus();
+    cancelRef.current?.focus();
     return () => {
       if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
     };
@@ -57,11 +54,6 @@ export default function ConfirmDialog({
     }
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    if (!busy) onConfirm();
-  }
-
   const confirmColor = destructive
     ? 'bg-red-400 text-ink hover:bg-red-300 focus-visible:ring-red-400'
     : 'bg-accent text-ink hover:bg-accent-hover focus-visible:ring-accent';
@@ -85,27 +77,25 @@ export default function ConfirmDialog({
             {description}
           </p>
         )}
-        <form noValidate onSubmit={handleSubmit}>
-          {children && <div className="mt-5">{children}</div>}
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              ref={cancelRef}
-              type="button"
-              onClick={onCancel}
-              disabled={busy}
-              className="rounded-lg border border-flow/40 px-4 py-2.5 font-medium text-flow hover:bg-flow/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-flow focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
-            >
-              {cancelLabel}
-            </button>
-            <button
-              type="submit"
-              disabled={busy}
-              className={`rounded-lg px-4 py-2.5 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60 ${confirmColor}`}
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </form>
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            ref={cancelRef}
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-lg border border-flow/40 px-4 py-2.5 font-medium text-flow hover:bg-flow/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-flow focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className={`rounded-lg px-4 py-2.5 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-60 ${confirmColor}`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   );

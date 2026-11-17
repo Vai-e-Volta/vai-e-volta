@@ -26,6 +26,11 @@ export default function AppRoutes() {
         </Route>
       </Route>
       <Route element={<Layout />}>
+      <Route element={<Layout />}>
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<RegisterPage />} />
+        </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/" element={<FeedPage />} />
           <Route path="/itens/:id" element={<ItemPage />} />
