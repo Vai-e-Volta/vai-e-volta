@@ -74,6 +74,11 @@ sobrepõem, com intervalos inclusivos (devolução no dia 14 libera retirada só
 `pending` não entram na restrição. `expires_at` é gravado pela API (`created_at` +
 `PROPOSAL_TTL_HOURS`). A duração inclusiva fica em `app/services/rental_period.py` (RN-36).
 
+A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
+nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
+`uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
+`rental_overdue` e torna o worker idempotente (`ON CONFLICT DO NOTHING`).
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
