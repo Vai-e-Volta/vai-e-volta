@@ -19,9 +19,11 @@ const forwardButtonClassName = `${iconButtonBase} font-bold text-accent focus-vi
 
 /**
  * Fotos do anúncio (RN-56): de 1 a 5, JPEG, PNG ou WebP, até 5 MB cada, com prévia,
- * reordenação e escolha da capa (a primeira). Cada item é { key, url, file? }.
+ * reordenação e escolha da capa (a primeira). Cada item é { key, url, file? } (fotos já
+ * salvas têm `id` e não têm `file`). Com `newAfterSaved`, usado na edição, as fotos
+ * novas ficam sempre depois das salvas, como a API grava (seção 10).
  */
-export default function PhotoUploader({ photos, onChange, error }) {
+export default function PhotoUploader({ photos, onChange, error, newAfterSaved = false }) {
   const inputId = useId();
   const errorId = `${inputId}-error`;
   const hintId = `${inputId}-hint`;
@@ -55,6 +57,15 @@ export default function PhotoUploader({ photos, onChange, error }) {
     if (accepted.length > 0) onChange([...photos, ...accepted]);
   }
 
+  // Na edição, uma foto nova não passa à frente de uma salva, e vice-versa.
+  function canMove(index, target) {
+    if (target < 0 || target >= photos.length) return false;
+    if (!newAfterSaved) return true;
+    const isNew = (position) => Boolean(photos[position].file);
+    const [from, to] = index < target ? [index, target] : [target, index];
+    return photos.slice(from, to + 1).every((_, offset) => isNew(from + offset) === isNew(index));
+  }
+
   function move(index, target) {
     const next = [...photos];
     const [photo] = next.splice(index, 1);
@@ -76,7 +87,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
     <div className="flex flex-col gap-3">
       <p id={hintId} className="text-sm text-slate-400">
         De 1 a {MAX_PHOTOS} fotos, JPEG, PNG ou WebP, até {MAX_PHOTO_MB} MB cada. A primeira é a
-        capa.
+        capa.{newAfterSaved && ' Fotos novas entram depois das que já estão no anúncio.'}
       </p>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {photos.map((photo, index) => {
@@ -101,7 +112,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
                   <button
                     type="button"
                     onClick={() => move(index, index - 1)}
-                    disabled={index === 0}
+                    disabled={!canMove(index, index - 1)}
                     aria-label={`Mover ${label} para a esquerda`}
                     className={backButtonClassName}
                   >
@@ -110,7 +121,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
                   <button
                     type="button"
                     onClick={() => move(index, index + 1)}
-                    disabled={index === photos.length - 1}
+                    disabled={!canMove(index, index + 1)}
                     aria-label={`Mover ${label} para a direita`}
                     className={forwardButtonClassName}
                   >
@@ -118,7 +129,7 @@ export default function PhotoUploader({ photos, onChange, error }) {
                   </button>
                 </div>
                 <div className="flex gap-1">
-                  {index > 0 && (
+                  {index > 0 && canMove(index, 0) && (
                     <button
                       type="button"
                       onClick={() => move(index, 0)}

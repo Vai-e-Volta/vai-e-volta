@@ -6,12 +6,14 @@ const API_BASE = '/api';
 const DEFAULT_ERROR_MESSAGE = 'Não foi possível concluir a ação. Tente novamente.';
 
 export class ApiError extends Error {
-  constructor({ status, code, message, fields }) {
+  constructor({ status, code, message, fields, retryAfter = null }) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.fields = fields ?? {};
+    // Segundos até poder tentar de novo (cabeçalho Retry-After, ex.: 429 do login).
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -39,13 +41,25 @@ async function readBody(response) {
   }
 }
 
-function toApiError(status, body) {
+/** Retry-After em segundos; aceita o número de segundos ou uma data HTTP. */
+function parseRetryAfter(value) {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds));
+  const date = Date.parse(value);
+  if (Number.isNaN(date)) return null;
+  return Math.max(0, Math.ceil((date - Date.now()) / 1000));
+}
+
+function toApiError(response, body) {
+  const { status } = response;
   const error = body?.error;
   return new ApiError({
     status,
     code: error?.code ?? (status >= 500 ? 'INTERNAL_ERROR' : 'UNKNOWN_ERROR'),
     message: error?.message ?? DEFAULT_ERROR_MESSAGE,
     fields: error?.fields ?? {},
+    retryAfter: parseRetryAfter(response.headers.get('retry-after')),
   });
 }
 
@@ -91,7 +105,7 @@ export async function request(path, { method = 'GET', body, handleUnauthorized =
   if (response.status === 401 && handleUnauthorized && unauthorizedHandler) {
     unauthorizedHandler();
   }
-  throw toApiError(response.status, data);
+  throw toApiError(response, data);
 }
 
 export const api = {

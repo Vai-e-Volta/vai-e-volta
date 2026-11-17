@@ -157,3 +157,29 @@ describe('regras do anúncio (F-38)', () => {
     expect(todayIso(new Date('2026-11-16T02:00:00Z'))).toBe('2026-11-15');
   });
 });
+
+describe('edição do anúncio', () => {
+  it('listingToForm aceita category_id ou category e tags como texto', async () => {
+    const { listingToForm } = await import('../src/utils/listingValidation');
+    const { values, photos } = listingToForm({
+      title: 'X',
+      category_id: 3,
+      tags: ['a', { name: 'b' }],
+      daily_price: '10.50',
+      photos: [{ id: 1, filename: 'f.webp' }],
+    });
+    expect(values.category_id).toBe('3');
+    expect(values.tags).toEqual(['a', 'b']);
+    expect(values.daily_price).toBe('10,50');
+    expect(photos).toEqual([{ key: 'saved-1', id: 1, url: '/uploads/f.webp' }]);
+  });
+
+  it('toListingUpdateFormData retorna null sem mudanças e troca todas as tags quando mudam', async () => {
+    const { toListingUpdateFormData } = await import('../src/utils/listingValidation');
+    const photos = [{ key: 'saved-1', id: 1, url: '/uploads/f.webp' }];
+    expect(toListingUpdateFormData(VALID, VALID, photos, photos)).toBeNull();
+    const data = toListingUpdateFormData({ ...VALID, tags: ['Nova'] }, VALID, photos, photos);
+    expect([...data.keys()]).toEqual(['tags[]']);
+    expect(data.getAll('tags[]')).toEqual(['Nova']);
+  });
+});

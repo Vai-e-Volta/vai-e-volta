@@ -169,7 +169,10 @@ describe('tela de cadastro (H-001)', () => {
     await fillAll(user);
     await submit(user);
 
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Conta criada!');
     const [[, options]] = registerCalls(fetchMock);
     expect(options.method).toBe('POST');
     expect(JSON.parse(options.body)).toEqual({
@@ -265,6 +268,8 @@ describe('tela de cadastro (H-001)', () => {
 
     expect(await screen.findByRole('button', { name: 'Criando conta…' })).toBeDisabled();
     resolveRegister();
-    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Que bom te ver de novo!' }),
+    ).toBeInTheDocument();
   });
 });

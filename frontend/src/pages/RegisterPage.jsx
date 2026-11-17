@@ -10,6 +10,7 @@ import {
   formatCep,
   formatCpf,
   formatPhone,
+  serverFieldErrors,
   toRegistrationPayload,
   validateRegistration,
 } from '../utils/registrationValidation';
@@ -39,27 +40,6 @@ const FIELD_SEQUENCE = STEPS.flatMap((step) => step.fields);
 const LAST_STEP = STEPS.length - 1;
 
 const stepOf = (field) => STEPS.findIndex((step) => step.fields.includes(field));
-
-const FIELD_IN_USE_MESSAGES = {
-  email: 'Este e-mail já está cadastrado.',
-  cpf: 'Este CPF já está cadastrado.',
-  username: 'Este nome de usuário já está em uso.',
-};
-
-function serverFieldErrors(error) {
-  const fields =
-    error.code === 'FIELD_IN_USE'
-      ? Object.fromEntries(
-          Object.entries(error.fields).map(([field, message]) => [
-            field,
-            FIELD_IN_USE_MESSAGES[field] ?? message,
-          ]),
-        )
-      : error.fields;
-  return Object.fromEntries(
-    Object.entries(fields).filter(([field]) => field in EMPTY_REGISTRATION),
-  );
-}
 
 function pick(errors, fields) {
   return Object.fromEntries(Object.entries(errors).filter(([field]) => fields.includes(field)));
@@ -339,8 +319,4 @@ export default function RegisterPage() {
       </form>
     </section>
   );
-import PagePlaceholder from '../components/PagePlaceholder';
-
-export default function RegisterPage() {
-  return <PagePlaceholder title="Criar conta" />;
 }

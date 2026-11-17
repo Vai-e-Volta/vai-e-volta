@@ -203,6 +203,8 @@ describe('criar anúncio (F-38)', () => {
     response = () =>
       jsonResponse(413, { error: { code: 'FILE_TOO_LARGE', message: 'Foto acima de 5 MB.' } });
     await user.click(screen.getByRole('button', { name: 'Publicar anúncio' }));
-    expect(await screen.findByText('Foto acima de 5 MB.')).toBeInTheDocument();
+    // A mensagem aparece no resumo e no bloco de fotos, que recebe o foco.
+    await waitFor(() => expect(screen.getAllByText('Foto acima de 5 MB.')).toHaveLength(2));
+    expect(screen.getByLabelText(/Adicionar fotos/)).toHaveFocus();
   });
 });

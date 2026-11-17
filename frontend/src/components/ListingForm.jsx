@@ -33,9 +33,9 @@ function Section({ title, description, children }) {
 }
 
 /**
- * Formulário do anúncio (seção 11.3), usado na criação e na edição. `onSubmit(values,
- * photos)` deve devolver uma Promise; se ela falhar com ApiError, os erros aparecem
- * em cada campo.
+ * Formulário do anúncio (seção 11.3), usado na criação e na edição (`editing`).
+ * `onSubmit(values, photos)` deve devolver uma Promise; se ela falhar com ApiError, os
+ * erros aparecem em cada campo.
  */
 export default function ListingForm({
   initialValues,
@@ -43,6 +43,7 @@ export default function ListingForm({
   submitLabel,
   pendingLabel,
   onSubmit,
+  editing = false,
 }) {
   const formRef = useRef(null);
   const [values, setValues] = useState(initialValues);
@@ -96,10 +97,9 @@ export default function ListingForm({
       await onSubmit(values, photos);
     } catch (error) {
       const fieldErrors = listingServerErrors(error);
-      showErrors(
-        fieldErrors,
-        Object.keys(fieldErrors).length > 0 ? 'Revise os campos destacados.' : error.message,
-      );
+      // No 422 o resumo é genérico; nos demais (409, 413…) a mensagem da API explica o motivo.
+      const generic = error.status === 422 && Object.keys(fieldErrors).length > 0;
+      showErrors(fieldErrors, generic ? 'Revise os campos destacados.' : error.message);
     } finally {
       setSubmitting(false);
     }
@@ -131,6 +131,7 @@ export default function ListingForm({
             clearError('photos');
           }}
           error={errors.photos}
+          newAfterSaved={editing}
         />
       </Section>
 

@@ -68,3 +68,23 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
   });
 });
+
+describe('ConfirmDialog com campos', () => {
+  it('foca o primeiro campo e Enter confirma', async () => {
+    const onConfirm = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ConfirmDialog open title="Confirmar?" onConfirm={onConfirm} onCancel={() => {}}>
+        <label>
+          Senha
+          <input type="password" />
+        </label>
+      </ConfirmDialog>,
+    );
+
+    expect(screen.getByLabelText('Senha')).toHaveFocus();
+    await user.keyboard('abc{Enter}');
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+});
