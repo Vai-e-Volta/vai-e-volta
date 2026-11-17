@@ -60,6 +60,11 @@ formato e unicidade; regras completas de cadastro permanecem na API.
 A migração `H002-1` cria `login_attempts` (bloqueio por tentativas, RN-14). O identificador
 fica só como hash SHA-256 do valor normalizado, nunca em claro.
 
+A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
+`listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
+das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
+`available_until ≥ hoje` ficam na API.
+
 ## Documentação
 
 - Documento Técnico do Projeto: escopo, regras de negócio (RN-nn), arquitetura, API e testes.
