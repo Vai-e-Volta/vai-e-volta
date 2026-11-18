@@ -79,6 +79,23 @@ formato e unicidade; regras completas de cadastro permanecem na API.
 A migração `H002-1` cria `login_attempts` (bloqueio por tentativas, RN-14). O identificador
 fica só como hash SHA-256 do valor normalizado, nunca em claro.
 
+## Autenticação e conta
+
+- `POST /api/auth/login` aceita e-mail ou nome de usuário e senha. Credenciais inválidas usam
+  resposta única; após 5 falhas do mesmo identificador em 15 minutos, o acesso fica bloqueado por
+  15 minutos (`429` com `Retry-After`). Os limites são configuráveis por `LOGIN_MAX_ATTEMPTS`,
+  `LOGIN_WINDOW_MINUTES` e `LOGIN_LOCK_MINUTES`.
+- A sessão usa JWT HS256 no cookie `vv_session` (HttpOnly, SameSite=Lax, Path=/), com validade de
+  `JWT_EXPIRES_DAYS` (15 por padrão). `JWT_SECRET` deve ter pelo menos 32 caracteres; use
+  `COOKIE_SECURE=true` quando a aplicação estiver sob HTTPS.
+- `GET /api/auth/me`, `POST /api/auth/logout`, `PUT /api/me/password` e `DELETE /api/me` cobrem
+  consulta privada da sessão, saída, troca de senha e exclusão da conta. A troca da senha exige a
+  senha atual e encerra as outras sessões. A exclusão também exige a senha, cancela propostas
+  pendentes, pausa anúncios e invalida a sessão; aluguéis aceitos em andamento ou futuros impedem
+  a operação (`409`).
+- Uma conta excluída pode ser reativada ao entrar antes de `purge_after`; seus anúncios permanecem
+  pausados. `ACCOUNT_RETENTION_DAYS` define o prazo (365 dias por padrão).
+
 A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
 `listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
 das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
