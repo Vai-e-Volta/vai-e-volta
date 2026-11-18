@@ -9,7 +9,7 @@ from sqlalchemy import and_, case, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
-from app.models import Category, Listing, ListingPhoto, Rental, User
+from app.models import Category, Favorite, Listing, ListingPhoto, Rental, User
 
 LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
 
@@ -53,7 +53,14 @@ def escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def get_feed(db: Session, user: User, limit: int, cursor: str | None, q: str | None = None) -> dict:
+def get_feed(
+    db: Session,
+    user: User,
+    limit: int,
+    cursor: str | None,
+    q: str | None = None,
+    favorites: bool = False,
+) -> dict:
     today = today_br()
     base_conditions = (
         Listing.status == "active",
@@ -66,6 +73,12 @@ def get_feed(db: Session, user: User, limit: int, cursor: str | None, q: str | N
             Rental.status == "accepted",
             Rental.start_date <= today,
             Rental.end_date >= today,
+        )
+    )
+    favorite_for_user = exists(
+        select(Favorite.listing_id).where(
+            Favorite.user_id == user.id,
+            Favorite.listing_id == Listing.id,
         )
     )
     cover = (
@@ -86,10 +99,10 @@ def get_feed(db: Session, user: User, limit: int, cursor: str | None, q: str | N
             Listing.pickup_city.label("city"),
             Listing.created_at,
             (Listing.owner_id == user.id).label("is_owner"),
+            favorite_for_user.label("is_favorite"),
         )
         .join(User, User.id == Listing.owner_id)
         .join(Category, Category.id == Listing.category_id)
-        .where(*base_conditions)
         .order_by(Listing.created_at.desc(), Listing.id.desc())
     )
     conditions = list(base_conditions)
@@ -98,7 +111,9 @@ def get_feed(db: Session, user: User, limit: int, cursor: str | None, q: str | N
         conditions.append(
             func.public.immutable_unaccent(func.lower(Listing.title)).ilike(pattern, escape="\\")
         )
-        stmt = stmt.where(conditions[-1])
+    if favorites:
+        conditions.append(favorite_for_user)
+    stmt = stmt.where(*conditions)
     total_stmt = select(func.count(Listing.id)).join(User, User.id == Listing.owner_id)
     total = db.scalar(total_stmt.where(*conditions)) or 0
     if cursor:

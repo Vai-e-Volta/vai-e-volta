@@ -17,6 +17,7 @@ class PublicListing(BaseModel):
     city: str
     created_at: datetime
     is_owner: bool
+    is_favorite: bool
 
 
 class FeedResponse(BaseModel):
