@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.execute(
         "CREATE INDEX ix_listings_title_search_trgm ON listings "
-        "USING gin (public.immutable_unaccent(lower(title)) gin_trgm_ops)"
+        "USING gin (immutable_unaccent(lower(title::text)) gin_trgm_ops)"
     )
 
 

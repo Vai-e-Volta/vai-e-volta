@@ -100,7 +100,7 @@ class Listing(Base):
 
 Index(
     "ix_listings_title_search_trgm",
-    func.public.immutable_unaccent(func.lower(Listing.title)),
+    func.immutable_unaccent(func.lower(Listing.title.cast(Text))),
     postgresql_using="gin",
     postgresql_ops={"immutable_unaccent": "gin_trgm_ops"},
 )
