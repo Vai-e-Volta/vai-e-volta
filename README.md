@@ -21,9 +21,19 @@ Copy-Item .env.example .env
 make up
 ```
 
-O Compose sobe PostgreSQL 18 e a API FastAPI. A API aplica as migrações ao iniciar e fica em
-http://localhost:8000; documentação interativa em http://localhost:8000/docs. O banco usa o
-volume Docker `postgres_data`, montado no diretório de dados recomendado pela imagem PostgreSQL 18.
+`make up` constrói e sobe PostgreSQL 18, a API FastAPI, o worker e o frontend servido por Nginx.
+A aplicação fica em http://localhost:8080; no perfil de desenvolvimento, a API também fica em
+http://localhost:8000 e sua documentação interativa em http://localhost:8000/docs. O Nginx encaminha
+`/api` para a API e serve `/uploads` pelo volume compartilhado. O banco usa o volume Docker
+`postgres_data`, montado no diretório de dados recomendado pela imagem PostgreSQL 18.
+
+O Compose carrega `docker-compose.override.yml` automaticamente para desenvolvimento: publica as
+portas locais da API e do PostgreSQL e monta o backend com recarga automática. Para subir a
+demonstração sem essas portas e sem recarga, use apenas os arquivos base e de produção:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 ## Comandos
 

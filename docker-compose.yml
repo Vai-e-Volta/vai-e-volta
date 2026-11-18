@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-vaievolta}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
       TZ: ${TZ:-America/Sao_Paulo}
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -36,8 +34,6 @@ services:
       MAX_PHOTOS: ${MAX_PHOTOS:-5}
       TZ: ${TZ:-America/Sao_Paulo}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    ports:
-      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +43,26 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+    volumes:
+      - uploads:${UPLOAD_DIR:-/data/uploads}
+
+  web:
+    build:
+      context: ./frontend
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    volumes:
+      - uploads:/data/uploads:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   worker:
     # Mesma imagem do backend, outro comando (Doc. Técnico 7.3). As migrações são aplicadas
