@@ -21,9 +21,12 @@ Copy-Item .env.example .env
 make up
 ```
 
-O Compose sobe PostgreSQL 18 e a API FastAPI. A API aplica as migrações ao iniciar e fica em
-http://localhost:8000; documentação interativa em http://localhost:8000/docs. O banco usa o
-volume Docker `postgres_data`, montado no diretório de dados recomendado pela imagem PostgreSQL 18.
+O Compose sobe PostgreSQL 18, a API FastAPI, o worker e o frontend servido pelo Nginx em
+http://localhost:8080. Em desenvolvimento, `docker-compose.override.yml` também publica a API em
+http://localhost:8000 (docs em `/docs`) e o banco em `localhost:5432`, além de habilitar recarga
+automática do backend. O Nginx encaminha `/api/` à API e serve `/uploads/` do volume compartilhado.
+O banco usa o volume Docker `postgres_data`, montado no diretório de dados recomendado pela imagem
+PostgreSQL 18.
 
 ## Comandos
 
@@ -35,6 +38,12 @@ volume Docker `postgres_data`, montado no diretório de dados recomendado pela i
 | Lint e testes | `make lint` · `make test` |
 | Exportar contrato OpenAPI | `make openapi` |
 | Rodar só a API no host | `make run-backend` |
+
+Para subir a configuração de demonstração sem publicar as portas do banco e da API, use:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 `make test` usa sempre um container PostgreSQL temporário na máquina do desenvolvedor, mesmo que
 `DATABASE_URL` esteja definido no shell. Assim, os testes que revertem migrações não alteram o banco

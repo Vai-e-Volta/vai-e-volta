@@ -1,0 +1,18 @@
+services:
+  db:
+    ports: !reset []
+    restart: unless-stopped
+
+  backend:
+    ports: !reset []
+    environment:
+      APP_ENV: prod
+    restart: unless-stopped
+
+  worker:
+    environment:
+      APP_ENV: prod
+    restart: unless-stopped
+
+  web:
+    restart: unless-stopped
