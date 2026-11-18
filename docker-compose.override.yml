@@ -18,4 +18,3 @@ services:
       APP_ENV: dev
     volumes:
       - ./backend:/app
-
