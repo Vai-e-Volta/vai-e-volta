@@ -2,20 +2,14 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, date, datetime
-from zoneinfo import ZoneInfo
+from datetime import UTC, datetime
 
 from sqlalchemy import and_, case, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
 from app.models import Category, Favorite, Listing, ListingPhoto, Rental, User
-
-LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
-
-
-def today_br() -> date:
-    return datetime.now(LOCAL_TZ).date()
+from app.services.rental_situation import today_br
 
 
 def _encode_cursor(created_at: datetime, listing_id: int) -> str:
