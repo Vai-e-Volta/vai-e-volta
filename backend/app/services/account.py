@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
@@ -10,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.errors import ApiError
 from app.models import Listing, Rental, User
 from app.services.authentication import hash_password, password_is_valid, verify_current_password
+from app.services.rental_situation import today_br
 
 
 def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
@@ -37,7 +37,7 @@ def delete_account(db: Session, user: User, password: str) -> None:
             status_code=401, code="INVALID_CREDENTIALS", message="Senha atual incorreta."
         )
 
-    today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    today = today_br()
     active_rental = db.scalar(
         select(Rental.id)
         .outerjoin(Listing, Listing.id == Rental.listing_id)

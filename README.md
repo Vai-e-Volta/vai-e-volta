@@ -109,6 +109,10 @@ A migração `H016-1` cria `rentals` (propostas e aluguéis) com a restrição `
 sobrepõem, com intervalos inclusivos (devolução no dia 14 libera retirada só no dia 15). Propostas
 `pending` não entram na restrição. `expires_at` é gravado pela API (`created_at` +
 `PROPOSAL_TTL_HOURS`). A duração inclusiva fica em `app/services/rental_period.py` (RN-36).
+`app/services/rental_situation.py` centraliza a situação exibida do aluguel (aguardando,
+reservado, em andamento, atrasado e histórico) e usa o dia local de `America/Sao_Paulo`.
+O locatário pode registrar a solicitação de devolução antecipada em
+`POST /api/rentals/{id}/return-request` após o início do aluguel.
 
 A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
 nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
