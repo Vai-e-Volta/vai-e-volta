@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-vaievolta}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
       TZ: ${TZ:-America/Sao_Paulo}
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -22,7 +20,7 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vaievolta}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}@db:5432/${POSTGRES_DB:-vaievolta}
-      APP_ENV: ${APP_ENV:-dev}
+      APP_ENV: ${APP_ENV:-prod}
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env}
       JWT_EXPIRES_DAYS: ${JWT_EXPIRES_DAYS:-15}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
@@ -36,8 +34,8 @@ services:
       MAX_PHOTOS: ${MAX_PHOTOS:-5}
       TZ: ${TZ:-America/Sao_Paulo}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-    ports:
-      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - uploads:${UPLOAD_DIR:-/data/uploads}
     depends_on:
       db:
         condition: service_healthy
@@ -56,7 +54,7 @@ services:
     command: ["python", "-m", "app.worker"]
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vaievolta}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}@db:5432/${POSTGRES_DB:-vaievolta}
-      APP_ENV: ${APP_ENV:-dev}
+      APP_ENV: ${APP_ENV:-prod}
       PROPOSAL_TTL_HOURS: ${PROPOSAL_TTL_HOURS:-48}
       ACCOUNT_RETENTION_DAYS: ${ACCOUNT_RETENTION_DAYS:-365}
       UPLOAD_DIR: ${UPLOAD_DIR:-/data/uploads}
@@ -75,6 +73,24 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - uploads:/data/uploads:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
