@@ -239,6 +239,92 @@
           }
         ]
       }
+    },
+    "/api/listings": {
+      "get": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "Listing Feed",
+        "operationId": "listing_feed_api_listings_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cursor inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -319,6 +405,39 @@
           "password"
         ],
         "title": "DeleteAccountRequest"
+      },
+      "FeedResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PublicListing"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "total"
+        ],
+        "title": "FeedResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -438,6 +557,72 @@
           "created_at"
         ],
         "title": "MeResponse"
+      },
+      "PublicListing": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Photo"
+          },
+          "situation": {
+            "type": "string",
+            "title": "Situation"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "neighborhood": {
+            "type": "string",
+            "title": "Neighborhood"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cover_photo",
+          "situation",
+          "category",
+          "title",
+          "daily_price",
+          "neighborhood",
+          "city",
+          "created_at",
+          "is_owner"
+        ],
+        "title": "PublicListing"
       },
       "RegistrationRequest": {
         "properties": {
