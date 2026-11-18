@@ -99,7 +99,8 @@ fica só como hash SHA-256 do valor normalizado, nunca em claro.
 `GET /api/listings` exige sessão e retorna o feed em ordem mais recente, com paginação por cursor
 (padrão 20 itens, máximo 50). O total considera anúncios ativos cuja janela não terminou e cujo
 dono não foi excluído; os cards mostram bairro e cidade, sem dados pessoais ou endereço completo.
-Um cursor inválido retorna `400 INVALID_CURSOR`.
+O parâmetro opcional `q` busca parte do título sem diferenciar maiúsculas ou acentos; `%`, `_` e
+`\` são tratados como texto comum. Um cursor inválido retorna `400 INVALID_CURSOR`.
 
 A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
 `listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição

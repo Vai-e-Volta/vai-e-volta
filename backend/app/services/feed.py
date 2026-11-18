@@ -48,7 +48,12 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
         ) from None
 
 
-def get_feed(db: Session, user: User, limit: int, cursor: str | None) -> dict:
+def escape_like(value: str) -> str:
+    """Escape SQL LIKE metacharacters so user input is always literal text."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def get_feed(db: Session, user: User, limit: int, cursor: str | None, q: str | None = None) -> dict:
     today = today_br()
     base_conditions = (
         Listing.status == "active",
@@ -87,8 +92,15 @@ def get_feed(db: Session, user: User, limit: int, cursor: str | None) -> dict:
         .where(*base_conditions)
         .order_by(Listing.created_at.desc(), Listing.id.desc())
     )
+    conditions = list(base_conditions)
+    if q:
+        pattern = f"%{escape_like(q)}%"
+        conditions.append(
+            func.public.immutable_unaccent(func.lower(Listing.title)).ilike(pattern, escape="\\")
+        )
+        stmt = stmt.where(conditions[-1])
     total_stmt = select(func.count(Listing.id)).join(User, User.id == Listing.owner_id)
-    total = db.scalar(total_stmt.where(*base_conditions)) or 0
+    total = db.scalar(total_stmt.where(*conditions)) or 0
     if cursor:
         created_at, listing_id = _decode_cursor(cursor)
         stmt = stmt.where(
