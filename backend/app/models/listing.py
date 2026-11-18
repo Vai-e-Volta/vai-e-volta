@@ -20,6 +20,7 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -95,6 +96,14 @@ class Listing(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
+
+
+Index(
+    "ix_listings_title_search_trgm",
+    func.immutable_unaccent(func.lower(Listing.title.cast(Text))),
+    postgresql_using="gin",
+    postgresql_ops={"immutable_unaccent": "gin_trgm_ops"},
+)
 
 
 class ListingPhoto(Base):

@@ -96,6 +96,14 @@ fica só como hash SHA-256 do valor normalizado, nunca em claro.
 - Uma conta excluída pode ser reativada ao entrar antes de `purge_after`; seus anúncios permanecem
   pausados. `ACCOUNT_RETENTION_DAYS` define o prazo (365 dias por padrão).
 
+`GET /api/listings` exige sessão e retorna o feed em ordem mais recente, com paginação por cursor
+(padrão 20 itens, máximo 50). O total considera anúncios ativos cuja janela não terminou e cujo
+dono não foi excluído; os cards mostram bairro e cidade, sem dados pessoais ou endereço completo.
+O parâmetro opcional `q` busca parte do título sem diferenciar maiúsculas ou acentos; `%`, `_` e
+`\` são tratados como texto comum. Cada card também traz `is_favorite`; `favorites=true` limita o
+feed aos favoritos. Favoritar e desfavoritar usam `PUT` e `DELETE /api/listings/{id}/favorite` e são
+idempotentes. Um cursor inválido retorna `400 INVALID_CURSOR`.
+
 A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
 `listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
 das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e
