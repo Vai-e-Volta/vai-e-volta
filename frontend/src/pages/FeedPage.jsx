@@ -6,6 +6,7 @@ import ListingCard from '../components/ListingCard';
 import SearchField from '../components/SearchField';
 import SortSelect from '../components/SortSelect';
 import { useFeedFilters } from '../hooks/useFeedFilters';
+import { useToggleFavorite } from '../hooks/useToggleFavorite';
 import { getFeed } from '../services/listings';
 
 const SKELETON_CARDS = 8;
@@ -61,6 +62,7 @@ export default function FeedPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const sidebarId = useId();
   const sentinelRef = useRef(null);
+  const favorite = useToggleFavorite();
   const now = useMemo(() => new Date(), []);
 
   const {
@@ -153,6 +155,14 @@ export default function FeedPage() {
           <div className="mb-4 flex justify-end">
             <SortSelect value={filters.sort ?? ''} onChange={(sort) => setFilters({ sort })} />
           </div>
+          {favorite.isError && (
+            <p
+              role="alert"
+              className="mb-4 rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-3 text-sm text-red-200"
+            >
+              Não foi possível atualizar o favorito. {favorite.error.message}
+            </p>
+          )}
           <div
             aria-busy={isPending || updating}
             className={`transition-opacity ${updating ? 'opacity-60' : ''}`}
@@ -186,7 +196,13 @@ export default function FeedPage() {
               <ul className={gridClassName}>
                 {items.map((listing) => (
                   <li key={listing.id}>
-                    <ListingCard listing={listing} now={now} />
+                    <ListingCard
+                      listing={listing}
+                      now={now}
+                      onToggleFavorite={(item) =>
+                        favorite.mutate({ id: item.id, favorite: !item.is_favorite })
+                      }
+                    />
                   </li>
                 ))}
               </ul>
