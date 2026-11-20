@@ -48,3 +48,8 @@ export function acceptRental(id) {
 export function rejectRental(id) {
   return api.post(`/rentals/${encodeURIComponent(id)}/reject`);
 }
+
+/** Marcar como devolvido (F-40): só o dono, com o aluguel já iniciado (RN-64). */
+export function completeRental(id) {
+  return api.post(`/rentals/${encodeURIComponent(id)}/complete`);
+}
