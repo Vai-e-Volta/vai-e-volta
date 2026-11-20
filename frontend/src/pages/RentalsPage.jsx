@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import CancelRentalButton from '../components/CancelRentalButton';
 import OwnerListingActions from '../components/OwnerListingActions';
+import ProposalDecision from '../components/ProposalDecision';
 import RentalCard from '../components/RentalCard';
 import { uploadUrl } from '../services/listings';
 import { getMyListings, getMyRentals } from '../services/rentals';
@@ -145,7 +146,13 @@ function OwnerView({ scope }) {
               : 'Nenhuma proposta ou aluguel em andamento nos seus anúncios.'
           }
         >
-          {(rental) => <RentalCard rental={rental} role="owner" />}
+          {(rental) => (
+            <RentalCard rental={rental} role="owner">
+              {rental.status === 'pending' && rental.situation === 'Aguardando' && (
+                <ProposalDecision rental={rental} />
+              )}
+            </RentalCard>
+          )}
         </PagedList>
       </section>
       <section aria-labelledby="meus-anuncios">
@@ -236,8 +243,9 @@ function Tabs({ label, options, value, onChange, variant }) {
 }
 
 /**
- * Tela Aluguéis (F-42, F-43, F-45): alterna "Meus anúncios" e "Itens que estou alugando",
+ * Tela Aluguéis (F-42 a F-45): alterna "Meus anúncios" e "Itens que estou alugando",
  * cada uma com ativos e histórico (RN-66), e mostra a situação de cada aluguel (RN-65).
+ * Em "Meus anúncios", o dono aceita ou recusa as propostas recebidas (F-39, F-44).
  */
 export default function RentalsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
