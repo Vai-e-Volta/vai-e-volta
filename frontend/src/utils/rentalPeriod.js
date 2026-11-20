@@ -57,3 +57,25 @@ export function proposalSummary({ start, end }, dailyPrice) {
   const days = rentalDays(startIso, endIso);
   return { days, total: estimatedTotal(dailyPrice, days) };
 }
+
+/** Valor por dia do aluguel: o congelado na proposta ou, na falta dele, total ÷ dias. */
+function dailyPriceOf(rental) {
+  if (rental.daily_price_snapshot) return Number(rental.daily_price_snapshot);
+  return Number(rental.estimated_total) / rentalDays(rental.start_date, rental.end_date);
+}
+
+/**
+ * Devolução antecipada (RN-50, seção 4.1): se o item volta hoje, antes do fim, o período
+ * termina hoje e o valor informativo passa a contar só os dias usados. Devolve null quando
+ * não é antecipada (hoje já é o último dia ou depois).
+ */
+export function earlyReturnSummary(rental, today) {
+  if (today >= rental.end_date || today < rental.start_date) return null;
+  const days = rentalDays(rental.start_date, today);
+  return {
+    days,
+    total: estimatedTotal(dailyPriceOf(rental), days),
+    originalDays: rentalDays(rental.start_date, rental.end_date),
+    originalTotal: Number(rental.estimated_total).toFixed(2),
+  };
+}
