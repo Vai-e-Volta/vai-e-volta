@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import CancelRentalButton from '../components/CancelRentalButton';
+import CompleteRentalButton from '../components/CompleteRentalButton';
 import OwnerListingActions from '../components/OwnerListingActions';
 import ProposalDecision from '../components/ProposalDecision';
 import RentalCard from '../components/RentalCard';
@@ -32,6 +33,11 @@ function pick(options, value) {
 function canCancel(rental, today) {
   if (rental.status === 'pending') return true;
   return rental.status === 'accepted' && rental.start_date > today;
+}
+
+/** O dono marca como devolvido o aluguel aceito que já começou (F-40, RN-64). */
+function canComplete(rental, today) {
+  return rental.status === 'accepted' && rental.start_date <= today;
 }
 
 function usePagedQuery(queryKey, fetchPage) {
@@ -132,6 +138,7 @@ function OwnerView({ scope }) {
     getMyListings({ scope }, cursor),
   );
   const history = scope === 'history';
+  const today = todayIso();
   return (
     <div className="flex flex-col gap-8">
       <section aria-labelledby="propostas-recebidas">
@@ -151,6 +158,7 @@ function OwnerView({ scope }) {
               {rental.status === 'pending' && rental.situation === 'Aguardando' && (
                 <ProposalDecision rental={rental} />
               )}
+              {canComplete(rental, today) && <CompleteRentalButton rental={rental} />}
             </RentalCard>
           )}
         </PagedList>
