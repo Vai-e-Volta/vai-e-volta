@@ -20,6 +20,23 @@ export async function getCategories() {
   return Array.isArray(data) ? data : (data?.categories ?? []);
 }
 
+/**
+ * Tags (F-17): sem texto, as mais usadas; com texto, as que combinam com ele.
+ * GET /api/tags?q=. Aceita a lista de nomes ou de objetos { name }.
+ */
+export async function getTags(q = '') {
+  const query = q ? `?${new URLSearchParams({ q })}` : '';
+  const data = await api.get(`/tags${query}`);
+  const list = Array.isArray(data) ? data : (data?.tags ?? []);
+  return list.map((tag) => (typeof tag === 'string' ? tag : tag.name)).filter(Boolean);
+}
+
+/** Atalhos de preço (F-19, RN-27): GET /api/listings/price-ranges → [{ label, min, max }]. */
+export async function getPriceRanges() {
+  const data = await api.get('/listings/price-ranges');
+  return data?.ranges ?? [];
+}
+
 /** Criar anúncio (F-38): POST /api/listings em multipart/form-data. */
 export function createListing(formData) {
   return api.post('/listings', formData);

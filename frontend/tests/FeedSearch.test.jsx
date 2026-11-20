@@ -18,6 +18,8 @@ function mockApi() {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
     if (url === '/api/auth/me') return jsonResponse(200, { id: 1, username: 'ana_teste' });
     if (url === '/api/categories') return jsonResponse(200, CATEGORIES);
+    if (url.startsWith('/api/tags')) return jsonResponse(200, []);
+    if (url === '/api/listings/price-ranges') return jsonResponse(200, { ranges: [] });
     if (url.startsWith('/api/listings?')) {
       return jsonResponse(200, { items: [], next_cursor: null, total: 0 });
     }
@@ -114,7 +116,10 @@ describe('busca pelo nome (F-16)', () => {
     const user = userEvent.setup();
     renderFeed();
 
-    await user.type(await screen.findByRole('searchbox'), 'barraca{Enter}');
+    await user.type(
+      await screen.findByRole('searchbox', { name: 'Buscar pelo nome do item' }),
+      'barraca{Enter}',
+    );
 
     await vi.waitFor(() => expect(lastFeedCall(fetchMock).get('q')).toBe('barraca'));
   });
@@ -123,7 +128,9 @@ describe('busca pelo nome (F-16)', () => {
     const fetchMock = mockApi();
     renderFeed('/?q=projetor');
 
-    expect(await screen.findByRole('searchbox')).toHaveValue('projetor');
+    expect(await screen.findByRole('searchbox', { name: 'Buscar pelo nome do item' })).toHaveValue(
+      'projetor',
+    );
     await vi.waitFor(() => expect(lastFeedCall(fetchMock).get('q')).toBe('projetor'));
   });
 
@@ -132,7 +139,7 @@ describe('busca pelo nome (F-16)', () => {
     const user = userEvent.setup();
     renderFeed('/?q=projetor');
 
-    await user.clear(await screen.findByRole('searchbox'));
+    await user.clear(await screen.findByRole('searchbox', { name: 'Buscar pelo nome do item' }));
     await user.keyboard('{Enter}');
 
     expect(screen.getByTestId('search')).toHaveTextContent(/^$/);
@@ -192,6 +199,8 @@ describe('troca de filtro', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       if (url === '/api/auth/me') return jsonResponse(200, { id: 1, username: 'ana_teste' });
       if (url === '/api/categories') return jsonResponse(200, CATEGORIES);
+      if (url.startsWith('/api/tags')) return jsonResponse(200, []);
+      if (url === '/api/listings/price-ranges') return jsonResponse(200, { ranges: [] });
       if (url.includes('categories')) {
         return new Promise((resolve) => {
           resolveSecond = () =>
