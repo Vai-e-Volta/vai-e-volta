@@ -154,18 +154,14 @@ export default function ItemPage() {
   const address = pickupAddress(listing);
 
   return (
-    <article className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <div className="flex flex-col gap-6">
+    // No celular a ordem é foto, dados e descrição; no computador a descrição fica
+    // embaixo da foto e os dados na coluna da direita.
+    <article className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-rows-[auto_1fr]">
+      <div className="lg:col-start-1 lg:row-start-1">
         <PhotoGallery photos={listing.photos ?? []} title={listing.title} />
-        <section aria-labelledby="descricao">
-          <h2 id="descricao" className="font-semibold text-white">
-            Descrição
-          </h2>
-          <p className="mt-2 whitespace-pre-line text-slate-300">{listing.description}</p>
-        </section>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
         <header>
           {categoryName(listing) && (
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -234,6 +230,13 @@ export default function ItemPage() {
 
         <BookedPeriods id={id} />
       </div>
+
+      <section aria-labelledby="descricao" className="lg:col-start-1 lg:row-start-2">
+        <h2 id="descricao" className="font-semibold text-white">
+          Descrição
+        </h2>
+        <p className="mt-2 whitespace-pre-line text-slate-300">{listing.description}</p>
+      </section>
     </article>
   );
 }
