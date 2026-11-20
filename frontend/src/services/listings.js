@@ -71,3 +71,18 @@ export function photoUrl(photo) {
 export function updateListing(id, formData) {
   return api.patch(`/listings/${encodeURIComponent(id)}`, formData);
 }
+
+/** Pausar o anúncio (F-41): POST /api/listings/{id}/pause. Só o dono (RN-60). */
+export function pauseListing(id) {
+  return api.post(`/listings/${encodeURIComponent(id)}/pause`);
+}
+
+/** Reativar o anúncio (F-41): POST /api/listings/{id}/resume. */
+export function resumeListing(id) {
+  return api.post(`/listings/${encodeURIComponent(id)}/resume`);
+}
+
+/** Excluir o anúncio (F-41): DELETE /api/listings/{id}. A exclusão é lógica. */
+export function deleteListing(id) {
+  return api.delete(`/listings/${encodeURIComponent(id)}`);
+}
