@@ -57,3 +57,20 @@ export function toFeedQuery(filters, cursor = null) {
   if (cursor) params.set('cursor', cursor);
   return params.toString();
 }
+
+/**
+ * Nova URLSearchParams com as mudanças aplicadas: texto vazio, null ou lista vazia
+ * removem o filtro. As listas aparecem repetidas na URL (?categories=1&categories=2).
+ */
+export function applyFilterChanges(searchParams, changes) {
+  const next = new URLSearchParams(searchParams);
+  for (const [key, value] of Object.entries(changes)) {
+    next.delete(key);
+    if (Array.isArray(value)) {
+      for (const item of value) next.append(key, item);
+    } else if (value !== null && value !== undefined && String(value).trim() !== '') {
+      next.set(key, String(value).trim());
+    }
+  }
+  return next;
+}
