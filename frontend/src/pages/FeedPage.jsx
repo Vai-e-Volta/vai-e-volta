@@ -1,6 +1,7 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
+import EmptyState from '../components/EmptyState';
 import FilterSidebar from '../components/FilterSidebar';
 import ListingCard from '../components/ListingCard';
 import SearchField from '../components/SearchField';
@@ -58,7 +59,7 @@ function countSidebarFilters(filters) {
  * URL, então a chave ['listings', filtros] muda junto com ela.
  */
 export default function FeedPage() {
-  const { filters, setFilters } = useFeedFilters();
+  const { filters, setFilters, clearFilters } = useFeedFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const sidebarId = useId();
   const sentinelRef = useRef(null);
@@ -187,9 +188,10 @@ export default function FeedPage() {
             )}
 
             {data && items.length === 0 && (
-              <p className="rounded-xl border border-line bg-panel px-6 py-10 text-center text-slate-400">
-                Nenhum item encontrado.
-              </p>
+              <EmptyState
+                hasFilters={Object.keys(filters).some((key) => key !== 'sort')}
+                onClearFilters={clearFilters}
+              />
             )}
 
             {items.length > 0 && (
