@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import LoadingScreen from '../components/LoadingScreen';
 import OwnerListingActions from '../components/OwnerListingActions';
 import PhotoGallery from '../components/PhotoGallery';
+import ProposalPanel from '../components/ProposalPanel';
 import { getBookedPeriods, getListing } from '../services/listings';
 import { formatCurrency, isoToBrDate } from '../utils/format';
 
@@ -115,9 +116,9 @@ function OwnerPanel({ listing, onDeleted }) {
 }
 
 /**
- * Página do item (F-28, F-29, F-31): galeria, dados do anúncio, períodos reservados e
- * anunciante. O dono não vê o botão de proposta (RN-33); anúncio pausado, excluído ou
- * de conta excluída aparece como indisponível para os outros (RN-34).
+ * Página do item (F-28 a F-31): galeria, dados do anúncio, períodos reservados,
+ * anunciante e proposta de aluguel. O dono não vê o botão de proposta (RN-33); anúncio
+ * pausado, excluído ou de conta excluída aparece como indisponível para os outros (RN-34).
  */
 export default function ItemPage() {
   const { id } = useParams();
@@ -192,14 +193,7 @@ export default function ItemPage() {
             onDeleted={() => navigate('/', { replace: true, state: { listingDeleted: true } })}
           />
         ) : (
-          <button
-            type="button"
-            disabled
-            title="A proposta de aluguel entra na próxima etapa (H016-3)."
-            className="rounded-lg bg-accent px-6 py-3 font-semibold text-ink shadow-lg shadow-accent/10 disabled:opacity-60"
-          >
-            Propor aluguel
-          </button>
+          <ProposalPanel listing={listing} />
         )}
 
         <dl className="grid gap-4 rounded-xl border border-line bg-panel p-5 sm:grid-cols-2">
