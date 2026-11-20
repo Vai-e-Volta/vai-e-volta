@@ -133,7 +133,7 @@ describe('feed (F-15, F-23, F-24)', () => {
     });
 
     expect(await screen.findByText('0 itens encontrados')).toBeInTheDocument();
-    expect(screen.getByText('Nenhum item encontrado.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nenhum item encontrado' })).toBeInTheDocument();
     const [params] = feedCalls(fetchMock);
     expect(params.get('q')).toBe('furadeira');
     expect(params.getAll('categories[]')).toEqual(['1', '2']);
