@@ -5,6 +5,7 @@ import CompleteRentalButton from '../components/CompleteRentalButton';
 import OwnerListingActions from '../components/OwnerListingActions';
 import ProposalDecision from '../components/ProposalDecision';
 import RentalCard from '../components/RentalCard';
+import ReturnRequestButton from '../components/ReturnRequestButton';
 import { uploadUrl } from '../services/listings';
 import { getMyListings, getMyRentals } from '../services/rentals';
 import { formatCurrency, todayIso } from '../utils/format';
@@ -38,6 +39,19 @@ function canCancel(rental, today) {
 /** O dono marca como devolvido o aluguel aceito que já começou (F-40, RN-64). */
 function canComplete(rental, today) {
   return rental.status === 'accepted' && rental.start_date <= today;
+}
+
+/**
+ * O locatário avisa a devolução antecipada no aluguel em andamento, antes do último dia,
+ * se ainda não avisou (F-37, RN-50).
+ */
+function canReturnEarly(rental, today) {
+  return (
+    rental.status === 'accepted' &&
+    !rental.return_requested_at &&
+    rental.start_date <= today &&
+    today < rental.end_date
+  );
 }
 
 function usePagedQuery(queryKey, fetchPage) {
@@ -158,7 +172,7 @@ function OwnerView({ scope }) {
               {rental.status === 'pending' && rental.situation === 'Aguardando' && (
                 <ProposalDecision rental={rental} />
               )}
-              {canComplete(rental, today) && <CompleteRentalButton rental={rental} />}
+              {canComplete(rental, today) && <CompleteRentalButton rental={rental} today={today} />}
             </RentalCard>
           )}
         </PagedList>
@@ -209,6 +223,7 @@ function RenterView({ scope }) {
         {(rental) => (
           <RentalCard rental={rental} role="renter">
             {canCancel(rental, today) && <CancelRentalButton rental={rental} />}
+            {canReturnEarly(rental, today) && <ReturnRequestButton rental={rental} today={today} />}
           </RentalCard>
         )}
       </PagedList>
