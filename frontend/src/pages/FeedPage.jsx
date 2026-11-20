@@ -1,6 +1,6 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import EmptyState from '../components/EmptyState';
 import FilterSidebar from '../components/FilterSidebar';
 import ListingCard from '../components/ListingCard';
@@ -60,6 +60,7 @@ function countSidebarFilters(filters) {
  */
 export default function FeedPage() {
   const { filters, setFilters, clearFilters } = useFeedFilters();
+  const location = useLocation();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const sidebarId = useId();
   const sentinelRef = useRef(null);
@@ -124,6 +125,15 @@ export default function FeedPage() {
           Anunciar item
         </Link>
       </div>
+
+      {location.state?.listingDeleted && (
+        <p
+          role="status"
+          className="mt-6 rounded-lg border border-flow/30 bg-flow/10 px-4 py-3 text-sm text-teal-100"
+        >
+          Anúncio excluído. As propostas pendentes dele foram recusadas.
+        </p>
+      )}
 
       <div className="mt-6 flex gap-3">
         <div className="flex-1">
