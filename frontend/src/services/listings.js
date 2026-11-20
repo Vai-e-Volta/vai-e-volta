@@ -53,6 +53,20 @@ export function getListing(id) {
   return api.get(`/listings/${encodeURIComponent(id)}`);
 }
 
+/**
+ * Períodos já reservados do anúncio (F-29): GET /api/listings/{id}/booked-periods.
+ * Aceita a lista ou { periods: [...] }; cada período tem start_date e end_date (AAAA-MM-DD).
+ */
+export async function getBookedPeriods(id) {
+  const data = await api.get(`/listings/${encodeURIComponent(id)}/booked-periods`);
+  return Array.isArray(data) ? data : (data?.periods ?? []);
+}
+
+/** Foto do anúncio vinda da API ({ id, url } ou { id, filename }) → endereço público. */
+export function photoUrl(photo) {
+  return photo?.url ?? uploadUrl(photo?.filename);
+}
+
 /** Editar anúncio (F-41): PATCH /api/listings/{id} em multipart, só com o que mudou. */
 export function updateListing(id, formData) {
   return api.patch(`/listings/${encodeURIComponent(id)}`, formData);
