@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { completeRental } from '../services/rentals';
+import { formatCurrency } from '../utils/format';
+import { earlyReturnSummary } from '../utils/rentalPeriod';
 import ConfirmDialog from './ConfirmDialog';
+
+const days = (n) => (n === 1 ? '1 dia' : `${n} dias`);
 
 function messageFrom(error) {
   if (error.code === 'INVALID_STATE') {
@@ -13,11 +17,14 @@ function messageFrom(error) {
 /**
  * Marcar como devolvido (F-40): o dono conclui o aluguel iniciado (RN-64). O aluguel vai
  * para o histórico dos dois; o atraso não gera multa. O botão é menta: o item voltou.
+ * Se o locatário avisou a devolução antes do fim (RN-50), a confirmação mostra o valor
+ * recalculado pelos dias usados.
  */
-export default function CompleteRentalButton({ rental }) {
+export default function CompleteRentalButton({ rental, today }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [problem, setProblem] = useState('');
+  const early = rental.return_requested_at ? earlyReturnSummary(rental, today) : null;
 
   const mutation = useMutation({
     mutationFn: () => completeRental(rental.id),
@@ -56,7 +63,18 @@ export default function CompleteRentalButton({ rental }) {
         busy={mutation.isPending}
         onConfirm={() => mutation.mutate()}
         onCancel={() => setOpen(false)}
-      />
+      >
+        {early && (
+          <p className="text-sm text-slate-300">
+            Devolução antes do prazo: o período termina hoje e o valor estimado passa de{' '}
+            {days(early.originalDays)} · {formatCurrency(early.originalTotal)} para{' '}
+            <span className="font-semibold text-white">
+              {days(early.days)} · {formatCurrency(early.total)}
+            </span>
+            .
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

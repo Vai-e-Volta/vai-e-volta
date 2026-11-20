@@ -53,3 +53,8 @@ export function rejectRental(id) {
 export function completeRental(id) {
   return api.post(`/rentals/${encodeURIComponent(id)}/complete`);
 }
+
+/** Avisar devolução antecipada (F-37): só o locatário, com o aluguel iniciado (RN-50). */
+export function requestReturn(id) {
+  return api.post(`/rentals/${encodeURIComponent(id)}/return-request`);
+}
