@@ -1,3 +1,5 @@
+import { parsePrice } from './listingValidation';
+
 // Filtros do feed (seção 11.2): ficam nos query params da URL para que recarregar ou
 // compartilhar o link mantenha a busca. Os nomes seguem os parâmetros de
 // GET /api/listings (seção 10); listas aparecem repetidas na URL da página
@@ -73,4 +75,37 @@ export function applyFilterChanges(searchParams, changes) {
     }
   }
   return next;
+}
+
+/** "25.00" da URL → "25,00" para mostrar no campo. */
+export function priceToInput(value) {
+  return value ? value.replace('.', ',') : '';
+}
+
+/**
+ * Faixa de preço digitada (F-18). Os dois campos são opcionais; cada um aceita "25",
+ * "25,5" ou "R$ 25,50". Devolve os valores no formato da API ("25.50") ou os erros.
+ */
+export function parsePriceRange(minText, maxText) {
+  const errors = {};
+  const values = { price_min: null, price_max: null };
+  for (const [key, text] of [
+    ['price_min', minText],
+    ['price_max', maxText],
+  ]) {
+    if (!text.trim()) continue;
+    const price = parsePrice(text);
+    if (price === null) errors[key] = 'Use um valor como 25 ou 25,50.';
+    else values[key] = price;
+  }
+  if (
+    !errors.price_min &&
+    !errors.price_max &&
+    values.price_min &&
+    values.price_max &&
+    Number(values.price_min) > Number(values.price_max)
+  ) {
+    errors.price_max = 'O máximo não pode ser menor que o mínimo.';
+  }
+  return { values, errors };
 }
