@@ -37,6 +37,12 @@ export async function getPriceRanges() {
   return data?.ranges ?? [];
 }
 
+/** Favoritar e desfavoritar (F-26): PUT ou DELETE /api/listings/{id}/favorite (204). */
+export function setFavorite(id, favorite) {
+  const path = `/listings/${encodeURIComponent(id)}/favorite`;
+  return favorite ? api.put(path) : api.delete(path);
+}
+
 /** Criar anúncio (F-38): POST /api/listings em multipart/form-data. */
 export function createListing(formData) {
   return api.post('/listings', formData);
