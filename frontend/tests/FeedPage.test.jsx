@@ -26,6 +26,8 @@ function mockApi(feed) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
     if (url === '/api/auth/me') return jsonResponse(200, { id: 1, username: 'ana_teste' });
     if (url.startsWith('/api/listings?')) return feed(new URLSearchParams(url.split('?')[1]));
+    if (url === '/api/categories' || url.startsWith('/api/tags')) return jsonResponse(200, []);
+    if (url === '/api/listings/price-ranges') return jsonResponse(200, { ranges: [] });
     throw new Error(`URL inesperada: ${url}`);
   });
 }

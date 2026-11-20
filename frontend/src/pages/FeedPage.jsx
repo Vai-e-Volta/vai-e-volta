@@ -38,9 +38,12 @@ function SkeletonGrid() {
 
 /** Quantos filtros da barra lateral estão em uso (a busca fica fora da conta). */
 function countSidebarFilters(filters) {
-  return Object.entries(filters)
-    .filter(([key]) => key !== 'q')
-    .reduce((count, [, value]) => count + (Array.isArray(value) ? value.length : 1), 0);
+  let count = filters.price_min || filters.price_max ? 1 : 0; // a faixa de preço conta como um
+  for (const [key, value] of Object.entries(filters)) {
+    if (key === 'q' || key === 'price_min' || key === 'price_max') continue;
+    count += Array.isArray(value) ? value.length : 1;
+  }
+  return count;
 }
 
 /**
