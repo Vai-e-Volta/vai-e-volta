@@ -234,6 +234,8 @@ describe('troca de filtro', () => {
 
     expect(screen.getByRole('link', { name: /Furadeira/ })).toBeInTheDocument();
     await act(async () => resolveSecond());
-    expect(await screen.findByText('Nenhum item encontrado.')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Nenhum item encontrado' }),
+    ).toBeInTheDocument();
   });
 });
