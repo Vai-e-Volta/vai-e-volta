@@ -1,3 +1,4 @@
+import { parseBrDate } from './format';
 import { parsePrice } from './listingValidation';
 
 // Filtros do feed (seção 11.2): ficam nos query params da URL para que recarregar ou
@@ -106,6 +107,41 @@ export function parsePriceRange(minText, maxText) {
     Number(values.price_min) > Number(values.price_max)
   ) {
     errors.price_max = 'O máximo não pode ser menor que o mínimo.';
+  }
+  return { values, errors };
+}
+
+/** Ordenação do feed (F-20). A primeira é a padrão e não aparece na URL. */
+export const SORT_OPTIONS = [
+  { value: 'newest', label: 'Mais recentes' },
+  { value: 'oldest', label: 'Mais antigos' },
+  { value: 'price_asc', label: 'Menor preço' },
+  { value: 'price_desc', label: 'Maior preço' },
+];
+
+/** Disponibilidade (F-21, RN-28). A primeira é a padrão e não aparece na URL. */
+export const AVAILABILITY_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'available_now', label: 'Disponíveis agora' },
+  { value: 'rented_now', label: 'Atualmente alugados' },
+];
+
+/**
+ * Período desejado (F-22), digitado em dd/mm/aaaa. Só vale com as duas datas (RN-29) e
+ * vai à API como AAAA-MM-DD.
+ */
+export function parsePeriod(fromText, untilText) {
+  const from = fromText.trim();
+  const until = untilText.trim();
+  if (!from && !until) return { values: { needed_from: null, needed_until: null }, errors: {} };
+  const errors = {};
+  const values = { needed_from: parseBrDate(from), needed_until: parseBrDate(until) };
+  if (!from) errors.needed_from = 'Informe a data de início.';
+  else if (!values.needed_from) errors.needed_from = 'Data inválida. Use dd/mm/aaaa.';
+  if (!until) errors.needed_until = 'Informe a data de fim.';
+  else if (!values.needed_until) errors.needed_until = 'Data inválida. Use dd/mm/aaaa.';
+  if (!errors.needed_from && !errors.needed_until && values.needed_until < values.needed_from) {
+    errors.needed_until = 'O fim deve ser no mesmo dia ou depois do início.';
   }
   return { values, errors };
 }
