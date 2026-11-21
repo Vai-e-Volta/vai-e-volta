@@ -10,6 +10,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.feed import router as feed_router
 from app.api.routes.health import router as health_router
 from app.api.routes.rentals import router as rentals_router
+from app.api.routes.users import router as users_router
 from app.config import Settings
 from app.config import settings as default_settings
 from app.errors import ApiError
@@ -97,6 +98,7 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     app.include_router(account_router)
     app.include_router(feed_router)
     app.include_router(rentals_router)
+    app.include_router(users_router)
     app.include_router(health_router)
     _register_exception_handlers(app)
     return app
