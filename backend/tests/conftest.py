@@ -1,8 +1,15 @@
+# ruff: noqa: E402, I001
 """Shared fixtures for schema tests: one connection per test, always rolled back."""
 
 from __future__ import annotations
 
 import os
+
+# Precisa rodar antes de qualquer import de app.* (pydantic-settings lê env em import time)
+os.environ.setdefault("JWT_SECRET", "test-secret-com-pelo-menos-32-caracteres")
+os.environ.setdefault("POSTGRES_PASSWORD", "fake")
+os.environ.setdefault("APP_ENV", "test")
+
 import uuid
 from collections.abc import Callable, Generator
 from datetime import date
