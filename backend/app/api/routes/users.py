@@ -8,12 +8,26 @@ from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.errors import ApiError
 from app.models import Listing, User
+from app.schemas.registration import ApiErrorResponse
 from app.schemas.users import PublicListing, PublicUser
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
-@router.get("/{username}", response_model=PublicUser)
+@router.get(
+    "/{username}",
+    response_model=PublicUser,
+    responses={
+        401: {
+            "model": ApiErrorResponse,
+            "description": "Autenticação obrigatória",
+        },
+        404: {
+            "model": ApiErrorResponse,
+            "description": "Perfil não encontrado",
+        },
+    },
+)
 def get_public_profile(
     username: str,
     _current_user: User = Depends(get_current_user),
