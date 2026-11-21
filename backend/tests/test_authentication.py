@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
+from freezegun import freeze_time
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -95,22 +96,80 @@ def test_login_session_me_and_logout(auth_context: tuple[TestClient, str]) -> No
     assert cookie
 
 
-def test_login_lockout_returns_retry_after(auth_context: tuple[TestClient, str]) -> None:
-    client, prefix = auth_context
-    payload = _register(client, prefix)
+def test_login_lockout_returns_retry_after(
+    auth_context: tuple[TestClient, str],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with freeze_time("2026-01-01T12:00:00+00:00") as frozen_time:
+        caplog.set_level("WARNING", logger="app.services.authentication")
 
-    for _ in range(5):
-        response = client.post(
-            "/api/auth/login", json={"identifier": payload["username"], "password": "Wrong1!"}
+        client, prefix = auth_context
+        payload = _register(client, prefix)
+
+        for _ in range(5):
+            response = client.post(
+                "/api/auth/login",
+                json={"identifier": payload["username"], "password": "Wrong1!"},
+            )
+            assert response.status_code == 401
+
+        locked = client.post(
+            "/api/auth/login",
+            json={"identifier": payload["username"], "password": payload["password"]},
         )
-        assert response.status_code == 401
 
-    locked = client.post(
-        "/api/auth/login", json={"identifier": payload["username"], "password": payload["password"]}
-    )
-    assert locked.status_code == 429
-    assert int(locked.headers["retry-after"]) > 0
-    assert locked.json()["error"]["code"] == "LOGIN_LOCKED"
+        assert locked.status_code == 429
+        assert int(locked.headers["retry-after"]) == 900
+        assert locked.json()["error"]["code"] == "LOGIN_LOCKED"
+
+        assert "Login blocked due to too many failed attempts" in caplog.text
+        assert payload["username"] not in caplog.text
+
+        frozen_time.tick(delta=timedelta(minutes=15))
+
+        unlocked = client.post(
+            "/api/auth/login",
+            json={"identifier": payload["username"], "password": payload["password"]},
+        )
+        assert unlocked.status_code == 200
+
+
+def test_login_remains_locked_after_failure_window_expires(
+    auth_context: tuple[TestClient, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOGIN_MAX_ATTEMPTS", "3")
+    monkeypatch.setenv("LOGIN_WINDOW_MINUTES", "5")
+    monkeypatch.setenv("LOGIN_LOCK_MINUTES", "15")
+
+    with freeze_time("2026-01-01T12:00:00+00:00") as frozen_time:
+        client, prefix = auth_context
+        payload = _register(client, prefix)
+
+        for _ in range(3):
+            response = client.post(
+                "/api/auth/login",
+                json={"identifier": payload["username"], "password": "Wrong1!"},
+            )
+            assert response.status_code == 401
+
+        locked = client.post(
+            "/api/auth/login",
+            json={"identifier": payload["username"], "password": payload["password"]},
+        )
+        assert locked.status_code == 429
+        assert int(locked.headers["retry-after"]) == 900
+
+        frozen_time.tick(delta=timedelta(minutes=6))
+
+        still_locked = client.post(
+            "/api/auth/login",
+            json={"identifier": payload["username"], "password": payload["password"]},
+        )
+
+        assert still_locked.status_code == 429
+        assert int(still_locked.headers["retry-after"]) == 540
+        assert still_locked.json()["error"]["code"] == "LOGIN_LOCKED"
 
 
 def test_change_password_rotates_other_sessions_and_keeps_current(
