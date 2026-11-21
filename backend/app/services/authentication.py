@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+import math
 import os
 from datetime import UTC, datetime, timedelta
 
@@ -18,6 +20,7 @@ from app.security.session import create_session_token, decode_session_token
 INVALID_CREDENTIALS = "E-mail, usuário ou senha incorretos"
 _password_hasher = PasswordHasher()
 _dummy_password_hash = _password_hasher.hash("Vai-e-Volta-dummy-password-9!")
+logger = logging.getLogger(__name__)
 
 
 def _identifier_hash(identifier: str) -> str:
@@ -45,20 +48,32 @@ def authenticate(db: Session, identifier: str, password: str) -> tuple[User, str
     lock_duration = timedelta(minutes=int(os.getenv("LOGIN_LOCK_MINUTES", "15")))
     max_attempts = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
 
+    query_window = max(window, lock_duration)
+
     failures = list(
         db.scalars(
             select(LoginAttempt)
             .where(
                 LoginAttempt.identifier_hash == identifier_digest,
                 LoginAttempt.success.is_(False),
-                LoginAttempt.attempted_at >= now - window,
+                LoginAttempt.attempted_at >= now - query_window,
             )
             .order_by(LoginAttempt.attempted_at.desc())
+            .limit(max_attempts)
         )
     )
+
     if len(failures) >= max_attempts:
-        retry_after = max(0, int((failures[0].attempted_at + lock_duration - now).total_seconds()))
-        if retry_after > 0:
+        latest_failure = failures[0].attempted_at
+        oldest_relevant_failure = failures[-1].attempted_at
+
+        attempts_within_window = oldest_relevant_failure >= latest_failure - window
+        lock_expires_at = latest_failure + lock_duration
+
+        if attempts_within_window and lock_expires_at > now:
+            retry_after = math.ceil((lock_expires_at - now).total_seconds())
+
+            logger.warning("Login blocked due to too many failed attempts")
             raise ApiError(
                 status_code=429,
                 code="LOGIN_LOCKED",
@@ -84,7 +99,7 @@ def authenticate(db: Session, identifier: str, password: str) -> tuple[User, str
         or user.anonymized_at is not None
         or (user.deleted_at is not None and (user.purge_after is None or user.purge_after <= now))
     ):
-        db.add(LoginAttempt(identifier_hash=identifier_digest, success=False))
+        db.add(LoginAttempt(identifier_hash=identifier_digest, attempted_at=now, success=False))
         db.commit()
         raise _invalid_credentials()
 
@@ -94,7 +109,7 @@ def authenticate(db: Session, identifier: str, password: str) -> tuple[User, str
         user.purge_after = None
         user.token_version += 1
 
-    db.add(LoginAttempt(identifier_hash=identifier_digest, success=True))
+    db.add(LoginAttempt(identifier_hash=identifier_digest, attempted_at=now, success=True))
     db.commit()
     db.refresh(user)
     return user, create_session_token(user.id, user.token_version)
