@@ -522,6 +522,32 @@ def test_my_listings_are_private_and_paginated(
     assert client.get("/api/me/listings", params={"cursor": "!"}).status_code == 400
 
 
+def test_category_filter_combines_categories_and_search(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    listing_ids = [
+        _insert_listing(user_id, title) for title in ("Martelo", "Martelo leve", "Serra")
+    ]
+    with Session(get_engine()) as session:
+        categories = list(session.scalars(select(Category.id).order_by(Category.id).limit(3)))
+        for listing_id, category_id in zip(listing_ids, categories, strict=True):
+            listing = session.get(Listing, listing_id)
+            assert listing is not None
+            listing.category_id = category_id
+        session.commit()
+    response = client.get(
+        "/api/listings",
+        params=[("categories[]", categories[0]), ("categories[]", categories[1]), ("q", "martelo")],
+    )
+    assert response.status_code == 200
+    assert {item["id"] for item in response.json()["items"]} == set(listing_ids[:2])
+    assert response.json()["total"] == 2
+    invalid = client.get("/api/listings", params={"categories[]": 999999})
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["fields"]["categories"]
+
+
 def test_feed_returns_public_fields_owner_flag_and_cover_photo(
     feed_context: tuple[TestClient, uuid.UUID],
 ) -> None:

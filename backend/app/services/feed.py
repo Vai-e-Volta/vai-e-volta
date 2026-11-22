@@ -54,6 +54,7 @@ def get_feed(
     cursor: str | None,
     q: str | None = None,
     favorites: bool = False,
+    categories: list[int] | None = None,
 ) -> dict:
     today = today_br()
     base_conditions = (
@@ -100,6 +101,17 @@ def get_feed(
         .order_by(Listing.created_at.desc(), Listing.id.desc())
     )
     conditions = list(base_conditions)
+    if categories:
+        requested = set(categories)
+        known = set(db.scalars(select(Category.id).where(Category.id.in_(requested))).all())
+        if requested != known:
+            raise ApiError(
+                status_code=422,
+                code="VALIDATION_ERROR",
+                message="Revise os campos informados.",
+                fields={"categories": "Categoria desconhecida."},
+            )
+        conditions.append(Listing.category_id.in_(requested))
     if q:
         pattern = f"%{escape_like(q)}%"
         conditions.append(
