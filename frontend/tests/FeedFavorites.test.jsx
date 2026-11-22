@@ -121,6 +121,8 @@ describe('favoritos (F-26)', () => {
 
     await user.click(heart('Item 2'));
 
-    expect(await screen.findByText('Nenhum item encontrado.')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Nenhum item encontrado' }),
+    ).toBeInTheDocument();
   });
 });

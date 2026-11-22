@@ -28,5 +28,11 @@ export function useFeedFilters() {
     [setSearchParams],
   );
 
-  return { filters, setFilters };
+  /** Tira todos os filtros (F-27); a chave muda e o feed recarrega sem eles. */
+  const clearFilters = useCallback(() => {
+    latest.current = new URLSearchParams();
+    setSearchParams(latest.current);
+  }, [setSearchParams]);
+
+  return { filters, setFilters, clearFilters };
 }
