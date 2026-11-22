@@ -14,6 +14,7 @@ from app.models import Listing, Rental, User
 from app.schemas.registration import RegistrationRequest
 from app.security.registration import registration_security
 from app.services.authentication import hash_password, password_is_valid, verify_current_password
+from app.services.proposal_expiry import expire_pending_proposals
 from app.services.registration import _field_in_use
 from app.services.rental_situation import today_br
 
@@ -112,15 +113,15 @@ def delete_account(db: Session, user: User, password: str) -> None:
     now = datetime.now(UTC)
     retention_days = int(os.getenv("ACCOUNT_RETENTION_DAYS", "365"))
     # All state changes occur in this transaction so the user never reaches a partial deletion.
+    involved = or_(
+        Rental.renter_id == user.id,
+        Rental.listing_id.in_(select(Listing.id).where(Listing.owner_id == user.id)),
+    )
+    # Overdue pending proposals are expired, not canceled (RN-47, H018-3).
+    expire_pending_proposals(db, now, involved)
     db.execute(
         update(Rental)
-        .where(
-            Rental.status == "pending",
-            or_(
-                Rental.renter_id == user.id,
-                Rental.listing_id.in_(select(Listing.id).where(Listing.owner_id == user.id)),
-            ),
-        )
+        .where(Rental.status == "pending", involved)
         .values(status="canceled", canceled_at=now)
     )
     db.execute(
