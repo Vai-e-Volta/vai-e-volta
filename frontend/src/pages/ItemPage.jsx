@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import LoadingScreen from '../components/LoadingScreen';
+import OwnerListingActions from '../components/OwnerListingActions';
 import PhotoGallery from '../components/PhotoGallery';
 import { getBookedPeriods, getListing } from '../services/listings';
 import { formatCurrency, isoToBrDate } from '../utils/format';
@@ -91,8 +92,8 @@ function BookedPeriods({ id }) {
   );
 }
 
-/** Visão do dono (F-31): situação do anúncio e ações. Pausar e excluir entram na H008-3. */
-function OwnerPanel({ listing }) {
+/** Visão do dono (F-31): situação do anúncio e ações de editar, pausar e excluir. */
+function OwnerPanel({ listing, onDeleted }) {
   const status = STATUS_LABELS[listing.status];
   const situation = SITUATION_LABELS[listing.situation];
   return (
@@ -106,13 +107,8 @@ function OwnerPanel({ listing }) {
       <p className="mt-1 text-sm text-slate-300">
         {[status, situation].filter(Boolean).join(' · ') || 'Você é o dono deste anúncio.'}
       </p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Link
-          to={`/anuncios/${listing.id}/editar`}
-          className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-ink hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-        >
-          Editar anúncio
-        </Link>
+      <div className="mt-4">
+        <OwnerListingActions listing={listing} onDeleted={onDeleted} />
       </div>
     </section>
   );
@@ -125,6 +121,7 @@ function OwnerPanel({ listing }) {
  */
 export default function ItemPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     data: listing,
     error,
@@ -190,7 +187,10 @@ export default function ItemPage() {
         </header>
 
         {listing.is_owner ? (
-          <OwnerPanel listing={listing} />
+          <OwnerPanel
+            listing={listing}
+            onDeleted={() => navigate('/', { replace: true, state: { listingDeleted: true } })}
+          />
         ) : (
           <button
             type="button"
