@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.errors import ApiError
 from app.models import Listing, ListingPhoto, Rental, User
-from app.services.rental_situation import rental_situation, today_br
+from app.services.proposal_expiry import effective_status, pending_is_expired
+from app.services.rental_situation import rental_situation
 
 
 def _encode_cursor(created_at: datetime, rental_id: int) -> str:
@@ -52,15 +53,16 @@ def list_rentals(
     cursor: str | None,
 ) -> dict:
     now = datetime.now(UTC)
-    today = today_br(now)
     stmt = select(Rental, Listing, User).join(Listing, Listing.id == Rental.listing_id)
     if role == "renter":
         stmt = stmt.join(User, User.id == Listing.owner_id).where(Rental.renter_id == user.id)
     else:
         stmt = stmt.join(User, User.id == Rental.renter_id).where(Listing.owner_id == user.id)
 
+    # An overdue pending proposal already belongs to the history, even before the worker
+    # moves it to expired (H018-3).
     active = or_(
-        and_(Rental.status == "pending", Rental.expires_at > now, Rental.start_date >= today),
+        and_(Rental.status == "pending", not_(pending_is_expired(now))),
         Rental.status == "accepted",
     )
     stmt = stmt.where(active if scope == "active" else not_(active))
@@ -98,7 +100,9 @@ def list_rentals(
                 "cover_photo": cover_photo,
                 "start_date": rental.start_date,
                 "end_date": rental.end_date,
-                "status": rental.status,
+                "status": effective_status(
+                    rental.status, rental.expires_at, rental.start_date, now
+                ),
                 "situation": rental_situation(
                     rental.status,
                     rental.start_date,

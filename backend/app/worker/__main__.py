@@ -7,6 +7,7 @@ import os
 
 from app.db import get_engine
 from app.worker import (
+    calendar_notices,  # noqa: F401  (registers the calendar notices job)
     cleanup,  # noqa: F401  (registers the cleanup job)
     expire_proposals,  # noqa: F401  (registers the proposal expiration job)
     tasks,  # noqa: F401  (registers the tasks)
