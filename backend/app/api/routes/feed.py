@@ -6,11 +6,19 @@ from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.errors import ApiError
 from app.models import Favorite, Listing, User
-from app.schemas.feed import FeedResponse
+from app.schemas.feed import FeedResponse, PriceRangesResponse
 from app.schemas.registration import ApiErrorResponse
-from app.services.feed import get_feed
+from app.services.feed import get_feed, price_ranges
 
 router = APIRouter(prefix="/api/listings", tags=["feed"])
+
+
+@router.get("/price-ranges", response_model=PriceRangesResponse)
+def listing_price_ranges(
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+) -> PriceRangesResponse:
+    return PriceRangesResponse.model_validate(price_ranges(db))
 
 
 @router.get(

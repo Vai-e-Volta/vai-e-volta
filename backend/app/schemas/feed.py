@@ -24,3 +24,13 @@ class FeedResponse(BaseModel):
     items: list[PublicListing]
     next_cursor: str | None
     total: int
+
+
+class PriceRange(BaseModel):
+    label: str
+    min: str
+    max: str
+
+
+class PriceRangesResponse(BaseModel):
+    ranges: list[PriceRange]
