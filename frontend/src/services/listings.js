@@ -1,9 +1,14 @@
 import { toFeedQuery } from '../utils/feedFilters';
 import { api } from './api';
+import demoImages from './demoImages.json';
+
+const demoImageNames = new Set(demoImages);
 
 /** Endereço de uma foto enviada, servida pelo Nginx em /uploads (seções 10 e 11.4). */
 export function uploadUrl(filename) {
-  return filename ? `/uploads/${encodeURIComponent(filename)}` : null;
+  if (!filename) return null;
+  const directory = demoImageNames.has(filename) ? '/demo' : '/uploads';
+  return `${directory}/${encodeURIComponent(filename)}`;
 }
 
 /**
