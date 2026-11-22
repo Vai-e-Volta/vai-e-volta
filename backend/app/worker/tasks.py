@@ -1,8 +1,8 @@
 """Tasks of the worker.
 
 Each task module registers its functions in ``app.worker.registry.registry`` and is imported
-here, so the scheduler sees every task. Upcoming tasks: H018-2 (expire proposals), H023-3
-(calendar notices), H005-4 (anonymization) and H006-5 (cleanup).
+here, so the scheduler sees every task. Other task modules: ``cleanup`` (H006-5) and
+``expire_proposals`` (H018-2), imported by ``app.worker.__main__``.
 """
 
 from __future__ import annotations
