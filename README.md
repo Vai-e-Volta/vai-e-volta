@@ -37,6 +37,7 @@ PostgreSQL 18.
 | Apagar o banco local e subir novamente | `make reset` |
 | Lint e testes | `make lint` · `make test` |
 | Exportar contrato OpenAPI | `make openapi` |
+| Carregar dados de demonstração | `make seed` |
 | Rodar só a API no host | `make run-backend` |
 
 Para subir a configuração de demonstração sem publicar as portas do banco e da API, use:
@@ -48,6 +49,12 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 `make test` usa sempre um container PostgreSQL temporário na máquina do desenvolvedor, mesmo que
 `DATABASE_URL` esteja definido no shell. Assim, os testes que revertem migrações não alteram o banco
 persistentemente usado pelo Compose. No CI, o runner usa o serviço PostgreSQL descartável do job.
+
+`make seed` exige que o backend esteja em execução com `APP_ENV=dev`. Ele cria os cinco usuários
+do Apêndice A, quinze anúncios com imagens ilustrativas e aluguéis nas situações principais. A
+senha das contas fictícias é `Dev@12345`. A conta `elisa_rocha` começa excluída e pode ser
+reativada pelo login. Executar novamente não duplica os dados nem desfaz alterações feitas nos
+registros existentes. E-mails de demonstração usam o domínio reservado `exemplo.test`.
 
 ## Frontend
 

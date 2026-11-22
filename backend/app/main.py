@@ -10,6 +10,8 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.feed import router as feed_router
 from app.api.routes.health import router as health_router
 from app.api.routes.listing_create import router as listing_create_router
+from app.api.routes.listing_lifecycle import router as listing_lifecycle_router
+from app.api.routes.my_listings import router as my_listings_router
 from app.api.routes.rentals import list_router as rentals_list_router
 from app.api.routes.rentals import router as rentals_router
 from app.api.routes.users import router as users_router
@@ -100,6 +102,8 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     app.include_router(account_router)
     app.include_router(feed_router)
     app.include_router(listing_create_router)
+    app.include_router(listing_lifecycle_router)
+    app.include_router(my_listings_router)
     app.include_router(rentals_router)
     app.include_router(rentals_list_router)
     app.include_router(users_router)
