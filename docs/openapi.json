@@ -430,6 +430,109 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Create Listing",
+        "operationId": "create_listing_api_listings_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingCreated"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "daily_price",
+                  "max_days",
+                  "available_from",
+                  "available_until",
+                  "category_id",
+                  "photos[]"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "daily_price": {
+                    "type": "string"
+                  },
+                  "max_days": {
+                    "type": "integer"
+                  },
+                  "available_from": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "available_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "category_id": {
+                    "type": "integer"
+                  },
+                  "pickup_cep": {
+                    "type": "string"
+                  },
+                  "pickup_street": {
+                    "type": "string"
+                  },
+                  "pickup_number": {
+                    "type": "string"
+                  },
+                  "pickup_complement": {
+                    "type": "string"
+                  },
+                  "pickup_neighborhood": {
+                    "type": "string"
+                  },
+                  "pickup_city": {
+                    "type": "string"
+                  },
+                  "pickup_state": {
+                    "type": "string"
+                  },
+                  "tags[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "photos[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/listings/{listing_id}/favorite": {
@@ -1165,6 +1268,36 @@
             }
           }
         }
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Categories",
+        "operationId": "categories_api_categories_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Categories Api Categories Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     }
   },
@@ -2174,6 +2307,37 @@
           "total"
         ],
         "title": "MyListingsResponse"
+      },
+      "CategoryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CategoryResponse"
+      },
+      "ListingCreated": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ListingCreated"
       }
     },
     "securitySchemes": {
