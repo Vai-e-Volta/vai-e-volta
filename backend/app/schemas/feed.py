@@ -34,3 +34,12 @@ class PriceRange(BaseModel):
 
 class PriceRangesResponse(BaseModel):
     ranges: list[PriceRange]
+
+
+class TagUsage(BaseModel):
+    name: str
+    count: int
+
+
+class TagsResponse(BaseModel):
+    tags: list[TagUsage]
