@@ -655,6 +655,80 @@
       }
     },
     "/api/listings/{listing_id}": {
+      "get": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Listing Detail",
+        "operationId": "listing_detail_api_listings__listing_id__get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PublicListingDetail"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ListingUnavailable"
+                    }
+                  ],
+                  "title": "Response Listing Detail Api Listings  Listing Id  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Anúncio não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "listings"
@@ -842,6 +916,74 @@
               }
             },
             "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{listing_id}/booked-periods": {
+      "get": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Listing Booked Periods",
+        "operationId": "listing_booked_periods_api_listings__listing_id__booked_periods_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookedPeriodsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Anúncio não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1562,6 +1704,42 @@
         ],
         "title": "ApiErrorResponse"
       },
+      "BookedPeriod": {
+        "properties": {
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "title": "BookedPeriod"
+      },
+      "BookedPeriodsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BookedPeriod"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "BookedPeriodsResponse"
+      },
       "CategoryResponse": {
         "properties": {
           "id": {
@@ -1703,6 +1881,26 @@
           "id"
         ],
         "title": "ListingCreated"
+      },
+      "ListingUnavailable": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "unavailable": {
+            "type": "boolean",
+            "title": "Unavailable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "unavailable"
+        ],
+        "title": "ListingUnavailable",
+        "description": "Answer for a paused or deleted listing, or one from a deleted account (RN-34)."
       },
       "LoginRequest": {
         "properties": {
@@ -1995,6 +2193,151 @@
           "ranges"
         ],
         "title": "PriceRangesResponse"
+      },
+      "PublicListingDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "unavailable": {
+            "type": "boolean",
+            "title": "Unavailable"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "max_days": {
+            "type": "integer",
+            "title": "Max Days"
+          },
+          "available_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Available From"
+          },
+          "available_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Available Until"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "photos": {
+            "items": {
+              "$ref": "#/components/schemas/PublicListingPhoto"
+            },
+            "type": "array",
+            "title": "Photos"
+          },
+          "owner_username": {
+            "type": "string",
+            "title": "Owner Username"
+          },
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner"
+          },
+          "pickup_street": {
+            "type": "string",
+            "title": "Pickup Street"
+          },
+          "pickup_neighborhood": {
+            "type": "string",
+            "title": "Pickup Neighborhood"
+          },
+          "pickup_city": {
+            "type": "string",
+            "title": "Pickup City"
+          },
+          "pickup_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Number"
+          },
+          "pickup_complement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Complement"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "unavailable",
+          "status",
+          "title",
+          "description",
+          "daily_price",
+          "max_days",
+          "available_from",
+          "available_until",
+          "category",
+          "tags",
+          "photos",
+          "owner_username",
+          "is_owner",
+          "pickup_street",
+          "pickup_neighborhood",
+          "pickup_city",
+          "pickup_number",
+          "pickup_complement"
+        ],
+        "title": "PublicListingDetail",
+        "description": "Listing page for the public (RN-15): never carries CEP, e-mail, CPF or phone."
+      },
+      "PublicListingPhoto": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "filename"
+        ],
+        "title": "PublicListingPhoto"
       },
       "PublicUser": {
         "properties": {
