@@ -4,10 +4,12 @@ import uuid
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from io import BytesIO
 from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -114,6 +116,58 @@ def test_feed_requires_login_and_rejects_invalid_cursor(
     invalid_cursor = client.get("/api/listings", params={"cursor": "not-a-cursor"})
     assert invalid_cursor.status_code == 400
     assert invalid_cursor.json()["error"]["code"] == "INVALID_CURSOR"
+
+
+def test_create_listing_with_photo_and_categories(
+    feed_context: tuple[TestClient, uuid.UUID], monkeypatch: pytest.MonkeyPatch, tmp_path: object
+) -> None:
+    client, user_id = feed_context
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path))
+    categories = client.get("/api/categories")
+    assert categories.status_code == 200
+    category_id = categories.json()[0]["id"]
+    today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    data = {
+        "title": "Câmera",
+        "description": "Item para aluguel",
+        "daily_price": "25.00",
+        "max_days": "3",
+        "available_from": str(today),
+        "available_until": str(today + timedelta(days=10)),
+        "category_id": str(category_id),
+        "tags[]": "Fotografia",
+    }
+    image = BytesIO()
+    Image.new("RGB", (2, 2)).save(image, format="PNG")
+    response = client.post(
+        "/api/listings", data=data, files={"photos[]": ("photo.png", image.getvalue(), "image/png")}
+    )
+    assert response.status_code == 201, response.text
+    with Session(get_engine()) as session:
+        listing = session.get(Listing, response.json()["id"])
+        assert listing is not None
+        assert listing.owner_id == user_id
+        assert listing.pickup_street == "Rua Privada"
+        assert session.scalar(select(ListingPhoto.id).where(ListingPhoto.listing_id == listing.id))
+    bad = client.post(
+        "/api/listings",
+        data={**data, "max_days": "50"},
+        files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+    )
+    assert bad.status_code == 422
+    duplicate = client.post(
+        "/api/listings",
+        data={**data, "tags[]": ["Foto", "foto"]},
+        files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+    )
+    assert duplicate.status_code == 422
+    invalid_image = client.post(
+        "/api/listings", data=data, files={"photos[]": ("x.png", b"bad", "image/png")}
+    )
+    assert invalid_image.status_code == 415
+    with Session(get_engine()) as session:
+        listings = session.scalars(select(Listing).where(Listing.owner_id == user_id)).all()
+        assert len(listings) == 1
 
 
 def test_feed_returns_public_fields_owner_flag_and_cover_photo(
