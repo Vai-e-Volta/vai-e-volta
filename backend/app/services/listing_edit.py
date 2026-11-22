@@ -36,7 +36,7 @@ def invalid(field: str, message: str) -> ApiError:
     )
 
 
-def edit_listing(db: Session, user: User, listing_id: int, form: Any) -> None:
+def require_editable_listing(db: Session, user: User, listing_id: int) -> Listing:
     listing = db.scalar(select(Listing).where(Listing.id == listing_id).with_for_update())
     if listing is None:
         raise ApiError(status_code=404, code="LISTING_NOT_FOUND", message="Anúncio não encontrado.")
@@ -44,7 +44,10 @@ def edit_listing(db: Session, user: User, listing_id: int, form: Any) -> None:
         raise ApiError(status_code=403, code="FORBIDDEN", message="Somente o dono pode editar.")
     if listing.status == "deleted":
         raise ApiError(status_code=409, code="INVALID_STATE", message="Anúncio indisponível.")
+    return listing
 
+
+def edit_listing(db: Session, listing: Listing, form: Any) -> None:
     list_fields = {"tags[]", "photos[]", "keep_photo_ids[]"}
     changes = {key: form.get(key) for key in form.keys() if key not in list_fields}
     if any(len(form.getlist(key)) != 1 for key in changes):

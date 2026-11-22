@@ -248,6 +248,12 @@ def test_edit_listing_preserves_snapshot_and_reorders_photos(
             f"/api/listings/{listing_id}", files=[("title", (None, "Não permitido"))]
         )
         assert denied.status_code == 403
+        assert (
+            other_client.patch(
+                f"/api/listings/{listing_id}", json={"title": "Não permitido"}
+            ).status_code
+            == 403
+        )
         invalid_photo = client.patch(
             f"/api/listings/{listing_id}",
             files=[("title", (None, "Não gravar")), ("photos[]", ("x.png", b"bad", "image/png"))],
