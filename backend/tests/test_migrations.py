@@ -8,7 +8,8 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import IntegrityError
 
 from alembic import command
-from app.main import app
+from app.config import Settings
+from app.main import create_app
 from app.migrations import upgrade_database
 
 EXPECTED_EXTENSIONS = {"citext", "pg_trgm", "unaccent", "btree_gist"}
@@ -137,8 +138,16 @@ def test_h001_1_users_constraints_reject_duplicate_identifiers_and_invalid_value
 
 def test_fastapi_startup_migrates_before_serving() -> None:
     command.downgrade(_alembic_config(), "20261022_0001")
+    dev_app = create_app(
+        Settings(
+            _env_file=None,
+            JWT_SECRET="x" * 32,
+            DATABASE_URL=DATABASE_URL,
+            APP_ENV="dev",
+        )
+    )
 
-    with TestClient(app) as client:
+    with TestClient(dev_app) as client:
         response = client.get("/openapi.json")
 
     assert response.status_code == 200
