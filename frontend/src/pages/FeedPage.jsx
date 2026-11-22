@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import FilterSidebar from '../components/FilterSidebar';
 import ListingCard from '../components/ListingCard';
 import SearchField from '../components/SearchField';
+import SortSelect from '../components/SortSelect';
 import { useFeedFilters } from '../hooks/useFeedFilters';
 import { getFeed } from '../services/listings';
 
@@ -37,11 +38,15 @@ function SkeletonGrid() {
 }
 
 /** Quantos filtros da barra lateral estão em uso (a busca fica fora da conta). */
+// Fora da barra lateral (busca e ordenação) ou contados em par (preço e período).
+const NOT_COUNTED = ['q', 'sort', 'price_min', 'price_max', 'needed_from', 'needed_until'];
+
 function countSidebarFilters(filters) {
-  let count = filters.price_min || filters.price_max ? 1 : 0; // a faixa de preço conta como um
+  let count = 0;
+  if (filters.price_min || filters.price_max) count += 1;
+  if (filters.needed_from || filters.needed_until) count += 1;
   for (const [key, value] of Object.entries(filters)) {
-    if (key === 'q' || key === 'price_min' || key === 'price_max') continue;
-    count += Array.isArray(value) ? value.length : 1;
+    if (!NOT_COUNTED.includes(key)) count += Array.isArray(value) ? value.length : 1;
   }
   return count;
 }
@@ -144,68 +149,73 @@ export default function FeedPage() {
           <FilterSidebar filters={filters} onChange={(changes) => setFilters(changes)} />
         </aside>
 
-        <div
-          aria-busy={isPending || updating}
-          className={`transition-opacity ${updating ? 'opacity-60' : ''}`}
-        >
-          {isPending && <SkeletonGrid />}
+        <div>
+          <div className="mb-4 flex justify-end">
+            <SortSelect value={filters.sort ?? ''} onChange={(sort) => setFilters({ sort })} />
+          </div>
+          <div
+            aria-busy={isPending || updating}
+            className={`transition-opacity ${updating ? 'opacity-60' : ''}`}
+          >
+            {isPending && <SkeletonGrid />}
 
-          {isError && !data && (
-            <div
-              role="alert"
-              className="rounded-xl border border-line bg-panel px-6 py-10 text-center"
-            >
-              <p className="font-medium text-white">Não foi possível carregar os itens.</p>
-              <p className="mt-1 text-sm text-slate-400">{error.message}</p>
-              <button
-                type="button"
-                onClick={() => refetch()}
-                className={`mt-5 ${retryButtonClassName}`}
+            {isError && !data && (
+              <div
+                role="alert"
+                className="rounded-xl border border-line bg-panel px-6 py-10 text-center"
               >
-                Tentar de novo
-              </button>
-            </div>
-          )}
-
-          {data && items.length === 0 && (
-            <p className="rounded-xl border border-line bg-panel px-6 py-10 text-center text-slate-400">
-              Nenhum item encontrado.
-            </p>
-          )}
-
-          {items.length > 0 && (
-            <ul className={gridClassName}>
-              {items.map((listing) => (
-                <li key={listing.id}>
-                  <ListingCard listing={listing} now={now} />
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {data && (
-            <div ref={sentinelRef} className="mt-8 flex flex-col items-center gap-3">
-              {isFetchingNextPage && (
-                <p role="status" className="text-sm text-slate-400">
-                  Carregando mais itens…
-                </p>
-              )}
-              {nextPageFailed && (
-                <p role="alert" className="text-sm text-red-300">
-                  {error.message}
-                </p>
-              )}
-              {hasNextPage && !isFetchingNextPage && (
+                <p className="font-medium text-white">Não foi possível carregar os itens.</p>
+                <p className="mt-1 text-sm text-slate-400">{error.message}</p>
                 <button
                   type="button"
-                  onClick={() => fetchNextPage()}
-                  className={retryButtonClassName}
+                  onClick={() => refetch()}
+                  className={`mt-5 ${retryButtonClassName}`}
                 >
-                  {nextPageFailed ? 'Tentar de novo' : 'Carregar mais'}
+                  Tentar de novo
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {data && items.length === 0 && (
+              <p className="rounded-xl border border-line bg-panel px-6 py-10 text-center text-slate-400">
+                Nenhum item encontrado.
+              </p>
+            )}
+
+            {items.length > 0 && (
+              <ul className={gridClassName}>
+                {items.map((listing) => (
+                  <li key={listing.id}>
+                    <ListingCard listing={listing} now={now} />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {data && (
+              <div ref={sentinelRef} className="mt-8 flex flex-col items-center gap-3">
+                {isFetchingNextPage && (
+                  <p role="status" className="text-sm text-slate-400">
+                    Carregando mais itens…
+                  </p>
+                )}
+                {nextPageFailed && (
+                  <p role="alert" className="text-sm text-red-300">
+                    {error.message}
+                  </p>
+                )}
+                {hasNextPage && !isFetchingNextPage && (
+                  <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    className={retryButtonClassName}
+                  >
+                    {nextPageFailed ? 'Tentar de novo' : 'Carregar mais'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
