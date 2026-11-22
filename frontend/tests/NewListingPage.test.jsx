@@ -26,6 +26,11 @@ function mockApi(createResponse = () => jsonResponse(201, { id: 'l99' })) {
     if (url === '/api/auth/me') return jsonResponse(200, ME);
     if (url === '/api/categories') return jsonResponse(200, CATEGORIES);
     if (url === '/api/listings' && options.method === 'POST') return createResponse();
+    // Página do anúncio criado, aberta depois do 201.
+    if (/^\/api\/listings\/[^/]+$/.test(url)) {
+      return jsonResponse(200, { id: 'novo', title: 'Anúncio criado', is_owner: true, photos: [] });
+    }
+    if (url.endsWith('/booked-periods')) return jsonResponse(200, []);
     throw new Error(`URL inesperada: ${options.method} ${url}`);
   });
 }
@@ -99,7 +104,7 @@ describe('criar anúncio (F-38)', () => {
     expect(screen.getByAltText('Prévia da foto 1 (capa)')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Publicar anúncio' }));
 
-    expect(await screen.findByRole('heading', { name: 'Item' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Seu anúncio' })).toBeInTheDocument();
     const [[, options]] = postCalls(fetchMock);
     const body = options.body;
     expect(body).toBeInstanceOf(FormData);
