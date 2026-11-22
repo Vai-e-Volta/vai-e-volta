@@ -94,22 +94,22 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          },
           "429": {
             "description": "Too Many Requests",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -533,31 +533,111 @@
         }
       }
     },
-    "/api/health": {
+    "/api/me/rentals": {
       "get": {
         "tags": [
-          "health"
+          "rentals"
         ],
-        "summary": "Get Health",
-        "description": "Saúde pública (sem autenticação): API respondendo e banco com SELECT 1.",
-        "operationId": "get_health_api_health_get",
+        "summary": "Rentals",
+        "operationId": "rentals_api_me_rentals_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "renter",
+                "owner"
+              ],
+              "type": "string",
+              "title": "Role"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "active",
+                "history"
+              ],
+              "type": "string",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/RentalListResponse"
                 }
               }
             }
           },
-          "503": {
-            "description": "Banco indisponível",
+          "400": {
+            "description": "Cursor inválido",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -625,6 +705,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get Health",
+        "description": "Saúde pública (sem autenticação): API respondendo e banco com SELECT 1.",
+        "operationId": "get_health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Banco indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
@@ -716,7 +828,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/PublicListing"
+              "$ref": "#/components/schemas/app__schemas__feed__PublicListing"
             },
             "type": "array",
             "title": "Items"
@@ -757,6 +869,32 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "HealthResponse"
       },
       "LoginRequest": {
         "properties": {
@@ -864,38 +1002,11 @@
         ],
         "title": "MeResponse"
       },
-      "PublicListing": {
+      "PublicUser": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "cover_photo": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Photo"
-          },
-          "situation": {
+          "username": {
             "type": "string",
-            "title": "Situation"
-          },
-          "category": {
-            "type": "string",
-            "title": "Category"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "daily_price": {
-            "type": "string",
-            "title": "Daily Price"
+            "title": "Username"
           },
           "neighborhood": {
             "type": "string",
@@ -910,30 +1021,24 @@
             "format": "date-time",
             "title": "Created At"
           },
-          "is_owner": {
-            "type": "boolean",
-            "title": "Is Owner"
-          },
-          "is_favorite": {
-            "type": "boolean",
-            "title": "Is Favorite"
+          "listings": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__users__PublicListing"
+            },
+            "type": "array",
+            "title": "Listings"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "id",
-          "cover_photo",
-          "situation",
-          "category",
-          "title",
-          "daily_price",
+          "username",
           "neighborhood",
           "city",
           "created_at",
-          "is_owner",
-          "is_favorite"
+          "listings"
         ],
-        "title": "PublicListing"
+        "title": "PublicUser"
       },
       "RegistrationRequest": {
         "properties": {
@@ -1064,6 +1169,129 @@
         ],
         "title": "RegistrationResponse"
       },
+      "RentalListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Photo"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "situation": {
+            "type": "string",
+            "title": "Situation"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "estimated_total": {
+            "type": "string",
+            "title": "Estimated Total"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "other_party_name": {
+            "type": "string",
+            "title": "Other Party Name"
+          },
+          "other_party_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Other Party Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "listing_id",
+          "title",
+          "cover_photo",
+          "start_date",
+          "end_date",
+          "status",
+          "situation",
+          "daily_price",
+          "estimated_total",
+          "created_at",
+          "other_party_name",
+          "other_party_phone"
+        ],
+        "title": "RentalListItem"
+      },
+      "RentalListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RentalListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "total"
+        ],
+        "title": "RentalListResponse"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1104,37 +1332,38 @@
         ],
         "title": "ValidationError"
       },
-      "HealthResponse": {
+      "app__schemas__feed__PublicListing": {
         "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "degraded"
-            ],
-            "title": "Status"
+          "id": {
+            "type": "integer",
+            "title": "Id"
           },
-          "database": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "error"
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Database"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status",
-          "database"
-        ],
-        "title": "HealthResponse"
-      },
-      "PublicUser": {
-        "properties": {
-          "username": {
+            "title": "Cover Photo"
+          },
+          "situation": {
             "type": "string",
-            "title": "Username"
+            "title": "Situation"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
           },
           "neighborhood": {
             "type": "string",
@@ -1149,24 +1378,54 @@
             "format": "date-time",
             "title": "Created At"
           },
-          "listings": {
-            "items": {
-              "$ref": "#/components/schemas/PublicListing"
-            },
-            "type": "array",
-            "title": "Listings"
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner"
+          },
+          "is_favorite": {
+            "type": "boolean",
+            "title": "Is Favorite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cover_photo",
+          "situation",
+          "category",
+          "title",
+          "daily_price",
+          "neighborhood",
+          "city",
+          "created_at",
+          "is_owner",
+          "is_favorite"
+        ],
+        "title": "PublicListing"
+      },
+      "app__schemas__users__PublicListing": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "username",
-          "neighborhood",
-          "city",
-          "created_at",
-          "listings"
+          "id",
+          "title",
+          "daily_price"
         ],
-        "title": "PublicUser"
+        "title": "PublicListing"
       }
     },
     "securitySchemes": {
