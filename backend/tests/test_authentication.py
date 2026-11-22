@@ -61,6 +61,29 @@ def _register(client: TestClient, prefix: str) -> dict[str, str]:
     return payload
 
 
+def test_edit_account_validates_and_reports_conflicts(auth_context: tuple[TestClient, str]) -> None:
+    client, prefix = auth_context
+    first = _register(client, prefix)
+    second = _register(client, prefix + "b")
+    assert (
+        client.post(
+            "/api/auth/login", json={"identifier": first["email"], "password": first["password"]}
+        ).status_code
+        == 200
+    )
+    updated = client.patch("/api/me", json={"full_name": "Novo Nome", "state": "sp"})
+    assert updated.status_code == 200
+    assert updated.json()["full_name"] == "Novo Nome"
+    assert updated.json()["state"] == "SP"
+    conflict = client.patch("/api/me", json={"email": second["email"]})
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["fields"]["email"]
+    assert client.patch("/api/me", json={"cpf": "12345678900"}).status_code == 422
+    assert client.patch("/api/me", json={"password": "NewPassword1!"}).status_code == 422
+    assert client.patch("/api/me", json={"full_name": None}).status_code == 422
+    assert TestClient(app).patch("/api/me", json={"city": "Outra"}).status_code == 401
+
+
 def test_login_session_me_and_logout(auth_context: tuple[TestClient, str]) -> None:
     client, prefix = auth_context
     unsupported_media_type = client.post(

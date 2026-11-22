@@ -6,7 +6,10 @@ import logging
 import os
 
 from app.db import get_engine
-from app.worker import tasks  # noqa: F401  (registers the tasks)
+from app.worker import (
+    cleanup,  # noqa: F401  (registers the cleanup job)
+    tasks,  # noqa: F401  (registers the tasks)
+)
 from app.worker.logging import configure_logging
 from app.worker.registry import registry
 from app.worker.scheduler import build_scheduler

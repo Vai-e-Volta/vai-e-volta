@@ -142,6 +142,35 @@ def test_category_filter_combines_categories_and_search(
     assert invalid.json()["error"]["fields"]["categories"]
 
 
+def test_price_ranges_use_active_prices_and_recalculate(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    assert TestClient(app).get("/api/listings/price-ranges").status_code == 401
+    assert client.get("/api/listings/price-ranges").json() == {"ranges": []}
+    ids = [_insert_listing(user_id, f"Item {i}") for i in range(4)]
+    with Session(get_engine()) as session:
+        for listing_id, price in zip(ids, (10, 20, 30, 40), strict=True):
+            listing = session.get(Listing, listing_id)
+            assert listing is not None
+            listing.daily_price = Decimal(price)
+        session.commit()
+    response = client.get("/api/listings/price-ranges")
+    assert response.json() == {
+        "ranges": [
+            {"label": "Mais baratos", "min": "10.00", "max": "20.00"},
+            {"label": "Intermediários", "min": "30.00", "max": "30.00"},
+            {"label": "Mais caros", "min": "40.00", "max": "40.00"},
+        ]
+    }
+    with Session(get_engine()) as session:
+        listing = session.get(Listing, ids[-1])
+        assert listing is not None
+        listing.status = "paused"
+        session.commit()
+    assert client.get("/api/listings/price-ranges").json()["ranges"][-1]["max"] == "30.00"
+
+
 def test_feed_returns_public_fields_owner_flag_and_cover_photo(
     feed_context: tuple[TestClient, uuid.UUID],
 ) -> None:

@@ -12,6 +12,31 @@ from app.models import Category, Favorite, Listing, ListingPhoto, Rental, User
 from app.services.rental_situation import today_br
 
 
+def price_ranges(db: Session) -> dict:
+    prices = db.scalars(
+        select(Listing.daily_price)
+        .join(User, User.id == Listing.owner_id)
+        .where(
+            Listing.status == "active",
+            Listing.available_until >= today_br(),
+            User.deleted_at.is_(None),
+        )
+        .order_by(Listing.daily_price, Listing.id)
+    ).all()
+    count = len(prices)
+    if count < 3:
+        return {"ranges": []}
+    # Distribui os anúncios em três grupos consecutivos, de tamanhos próximos.
+    boundaries = (0, (count + 2) // 3, (2 * count + 2) // 3, count)
+    labels = ("Mais baratos", "Intermediários", "Mais caros")
+    return {
+        "ranges": [
+            {"label": label, "min": f"{prices[start]:.2f}", "max": f"{prices[end - 1]:.2f}"}
+            for label, start, end in zip(labels, boundaries[:-1], boundaries[1:], strict=True)
+        ]
+    }
+
+
 def _encode_cursor(created_at: datetime, listing_id: int) -> str:
     payload = json.dumps(
         {"created_at": created_at.astimezone(UTC).isoformat(), "id": listing_id},

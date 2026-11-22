@@ -1,4 +1,4 @@
-.PHONY: up down reset run-backend lint-backend lint-frontend lint test-backend test-frontend test openapi
+.PHONY: up down reset run-backend lint-backend lint-frontend lint test-backend test-frontend test openapi seed
 
 up:
 	docker compose up -d --build
@@ -39,3 +39,6 @@ test: test-backend test-frontend
 
 openapi:
 	cd backend && uv run python -m app.scripts.export_openapi ../docs/openapi.json
+
+seed:
+	docker compose exec -T backend python -m app.scripts.seed_dev
