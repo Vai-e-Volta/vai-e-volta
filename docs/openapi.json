@@ -379,6 +379,21 @@
             }
           },
           {
+            "name": "availability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "available_now",
+                "rented_now"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Availability"
+            }
+          },
+          {
             "name": "tags[]",
             "in": "query",
             "required": false,
@@ -436,8 +451,8 @@
                 {
                   "type": "null"
                 }
-              ],
-              "title": "Price Max"
+             ],
+             "title": "Price Max"
             }
           },
           {

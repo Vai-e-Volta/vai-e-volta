@@ -3,13 +3,14 @@ from __future__ import annotations
 import re
 import uuid
 from collections.abc import Generator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
+from freezegun import freeze_time
 from PIL import Image
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -76,6 +77,8 @@ def _insert_listing(
     *,
     created_at: datetime | None = None,
     photo: str | None = None,
+    available_from: date | None = None,
+    available_until: date | None = None,
 ) -> int:
     engine = get_engine()
     today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
@@ -88,8 +91,8 @@ def _insert_listing(
             description="Descrição privada de teste",
             daily_price=Decimal("25.00"),
             max_days=7,
-            available_from=today,
-            available_until=today + timedelta(days=30),
+            available_from=available_from or today,
+            available_until=available_until or today + timedelta(days=30),
             pickup_cep="96200000",
             pickup_street="Rua Privada",
             pickup_number="123",
@@ -667,3 +670,249 @@ def test_favorites_are_idempotent_and_filter_the_feed(
     all_items = {item["id"]: item for item in client.get("/api/listings").json()["items"]}
     assert all_items[favorite_id]["is_favorite"] is False
     assert client.get("/api/listings", params={"favorites": "true"}).json()["items"] == []
+
+
+# ---------------------------------------------------------------------------
+# H012-2 · RN-28 · F-21 · API-FEED-05: filtro de disponibilidade com relógio congelado.
+# Os dados são criados fora do freeze_time (o banco usa now() real); só a consulta é congelada.
+# Fuso America/Sao_Paulo é UTC-3 (sem horário de verão), então 15:00Z = 12:00 em Brasília.
+# ---------------------------------------------------------------------------
+
+JANELA_INICIO = date(2030, 6, 1)
+JANELA_FIM = date(2030, 6, 30)
+ALUGUEL_INICIO = date(2030, 6, 10)
+ALUGUEL_FIM = date(2030, 6, 14)
+
+
+def _insert_rental(
+    listing_id: int,
+    renter_id: uuid.UUID,
+    start: date,
+    end: date,
+    status: str = "accepted",
+) -> None:
+    # O banco não impede o dono de ser o locatário (RN-40 é regra da API); isso evita
+    # criar um segundo usuário só para os testes de leitura do feed.
+    with Session(get_engine()) as session:
+        session.add(
+            Rental(
+                listing_id=listing_id,
+                renter_id=renter_id,
+                start_date=start,
+                end_date=end,
+                status=status,
+                daily_price_snapshot=Decimal("25.00"),
+                estimated_total=Decimal("125.00"),
+                listing_snapshot={"title": "cópia de teste"},
+                expires_at=datetime.now(UTC) + timedelta(days=2),
+            )
+        )
+        session.commit()
+
+
+def _feed_at(
+    client: TestClient, user_id: uuid.UUID, frozen_at: str, **params: str
+) -> tuple[set[int], int]:
+    """Consulta o feed com o relógio congelado e devolve (ids, total)."""
+    with freeze_time(frozen_at):
+        # O token precisa nascer dentro do freeze, senão já estaria expirado em 2030.
+        client.cookies.set("vv_session", create_session_token(user_id, 0))
+        response = client.get("/api/listings", params=params)
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    return {item["id"] for item in payload["items"]}, payload["total"]
+
+
+@pytest.mark.parametrize(
+    ("frozen_at", "available_now", "rented_now"),
+    [
+        pytest.param("2030-06-09T15:00:00+00:00", True, False, id="vespera-do-inicio"),
+        pytest.param("2030-06-10T15:00:00+00:00", False, True, id="primeiro-dia"),
+        pytest.param("2030-06-12T15:00:00+00:00", False, True, id="meio-do-aluguel"),
+        pytest.param("2030-06-14T15:00:00+00:00", False, True, id="ultimo-dia"),
+        pytest.param("2030-06-15T15:00:00+00:00", True, False, id="dia-seguinte-ao-fim"),
+    ],
+)
+def test_API_FEED_05_availability_rental_boundaries(
+    feed_context: tuple[TestClient, uuid.UUID],
+    frozen_at: str,
+    available_now: bool,
+    rented_now: bool,
+) -> None:
+    client, user_id = feed_context
+    listing_id = _insert_listing(
+        user_id, "Furadeira", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(listing_id, user_id, ALUGUEL_INICIO, ALUGUEL_FIM)
+
+    available_ids, available_total = _feed_at(
+        client, user_id, frozen_at, availability="available_now"
+    )
+    rented_ids, rented_total = _feed_at(client, user_id, frozen_at, availability="rented_now")
+    all_ids, all_total = _feed_at(client, user_id, frozen_at, availability="all")
+
+    assert available_ids == ({listing_id} if available_now else set())
+    assert available_total == len(available_ids)
+    assert rented_ids == ({listing_id} if rented_now else set())
+    assert rented_total == len(rented_ids)
+    # "Todos" reúne os dois grupos (o item aparece sempre, em um dos dois).
+    assert all_ids == {listing_id}
+    assert all_total == 1
+    # Os dois grupos nunca se sobrepõem.
+    assert not available_ids & rented_ids
+
+
+def test_API_FEED_05_one_day_rental_is_rented_only_on_that_day(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    listing_id = _insert_listing(
+        user_id, "Escada", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(listing_id, user_id, ALUGUEL_INICIO, ALUGUEL_INICIO)  # início == fim
+
+    for frozen_at, rented in [
+        ("2030-06-09T15:00:00+00:00", False),
+        ("2030-06-10T15:00:00+00:00", True),
+        ("2030-06-11T15:00:00+00:00", False),
+    ]:
+        rented_ids, _ = _feed_at(client, user_id, frozen_at, availability="rented_now")
+        assert (listing_id in rented_ids) is rented, frozen_at
+
+
+def test_API_FEED_05_uses_brasilia_day_at_midnight_boundary(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    """RN-69: "hoje" é o dia de America/Sao_Paulo, não o de UTC."""
+    client, user_id = feed_context
+    listing_id = _insert_listing(
+        user_id, "Serra", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(listing_id, user_id, ALUGUEL_INICIO, ALUGUEL_FIM)
+
+    # 23:59:59 do dia 14 em Brasília (já é dia 15 em UTC): ainda é o último dia do aluguel.
+    last_second, _ = _feed_at(
+        client, user_id, "2030-06-15T02:59:59+00:00", availability="rented_now"
+    )
+    # 00:00:00 do dia 15 em Brasília: o item já voltou a ficar disponível.
+    next_midnight, _ = _feed_at(
+        client, user_id, "2030-06-15T03:00:00+00:00", availability="available_now"
+    )
+    assert listing_id in last_second
+    assert listing_id in next_midnight
+
+
+@pytest.mark.parametrize("status", ["pending", "rejected", "expired", "canceled", "completed"])
+def test_API_FEED_05_only_accepted_rentals_make_an_item_rented(
+    feed_context: tuple[TestClient, uuid.UUID], status: str
+) -> None:
+    client, user_id = feed_context
+    listing_id = _insert_listing(
+        user_id, "Betoneira", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(listing_id, user_id, ALUGUEL_INICIO, ALUGUEL_FIM, status=status)
+    frozen_at = "2030-06-12T15:00:00+00:00"
+
+    assert _feed_at(client, user_id, frozen_at, availability="available_now")[0] == {listing_id}
+    assert _feed_at(client, user_id, frozen_at, availability="rented_now")[0] == set()
+
+
+def test_API_FEED_05_availability_window_boundaries(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    today = date(2030, 6, 10)
+    starts_today = _insert_listing(
+        user_id, "Janela começa hoje", available_from=today, available_until=JANELA_FIM
+    )
+    ends_today = _insert_listing(
+        user_id, "Janela termina hoje", available_from=JANELA_INICIO, available_until=today
+    )
+    starts_tomorrow = _insert_listing(
+        user_id,
+        "Janela começa amanhã",
+        available_from=today + timedelta(days=1),
+        available_until=JANELA_FIM,
+    )
+    ended_yesterday = _insert_listing(
+        user_id,
+        "Janela terminou ontem",
+        available_from=JANELA_INICIO,
+        available_until=today - timedelta(days=1),
+    )
+    frozen_at = "2030-06-10T15:00:00+00:00"
+
+    available_ids, available_total = _feed_at(
+        client, user_id, frozen_at, availability="available_now"
+    )
+    assert available_ids == {starts_today, ends_today}
+    assert available_total == 2
+    assert _feed_at(client, user_id, frozen_at, availability="rented_now")[0] == set()
+    # Sem filtro, vale a RN-24: janela futura continua no feed; janela encerrada, não.
+    all_ids, _ = _feed_at(client, user_id, frozen_at)
+    assert all_ids == {starts_today, ends_today, starts_tomorrow}
+    assert ended_yesterday not in all_ids
+
+
+def test_API_FEED_05_inactive_listings_stay_out_of_both_groups(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    paused_id = _insert_listing(
+        user_id, "Pausado", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    rented_paused_id = _insert_listing(
+        user_id, "Alugado e pausado", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(rented_paused_id, user_id, ALUGUEL_INICIO, ALUGUEL_FIM)
+    with Session(get_engine()) as session:
+        for listing_id in (paused_id, rented_paused_id):
+            listing = session.get(Listing, listing_id)
+            assert listing is not None
+            listing.status = "paused"
+        session.commit()
+    frozen_at = "2030-06-12T15:00:00+00:00"
+
+    for availability in ("all", "available_now", "rented_now"):
+        ids, total = _feed_at(client, user_id, frozen_at, availability=availability)
+        assert ids == set(), availability
+        assert total == 0, availability
+
+
+def test_API_FEED_05_default_is_all_combines_with_other_filters_and_rejects_unknown_value(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    free_id = _insert_listing(
+        user_id, "Martelo livre", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    rented_id = _insert_listing(
+        user_id, "Martelo alugado", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    other_id = _insert_listing(
+        user_id, "Serra livre", available_from=JANELA_INICIO, available_until=JANELA_FIM
+    )
+    _insert_rental(rented_id, user_id, ALUGUEL_INICIO, ALUGUEL_FIM)
+    frozen_at = "2030-06-12T15:00:00+00:00"
+
+    # Sem o parâmetro, o comportamento é o de "all".
+    assert _feed_at(client, user_id, frozen_at)[0] == {free_id, rented_id, other_id}
+    # RN-26: tipos diferentes de filtro se combinam com E.
+    assert _feed_at(client, user_id, frozen_at, availability="available_now", q="martelo")[0] == {
+        free_id
+    }
+    assert _feed_at(client, user_id, frozen_at, availability="rented_now", q="martelo")[0] == {
+        rented_id
+    }
+    # A situação mostrada no card acompanha o grupo.
+    # A situação do card acompanha o grupo; valor desconhecido é rejeitado.
+    with freeze_time(frozen_at):
+        client.cookies.set("vv_session", create_session_token(user_id, 0))
+        feed = client.get("/api/listings").json()
+        invalid = client.get("/api/listings", params={"availability": "tudo"})
+    items = {item["id"]: item["situation"] for item in feed["items"]}
+    assert items == {free_id: "available", rented_id: "rented", other_id: "available"}
+
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert "availability" in invalid.json()["error"]["fields"]

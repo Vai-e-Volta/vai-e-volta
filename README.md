@@ -122,6 +122,13 @@ O parâmetro opcional `q` busca parte do título sem diferenciar maiúsculas ou 
 feed aos favoritos. Favoritar e desfavoritar usam `PUT` e `DELETE /api/listings/{id}/favorite` e são
 idempotentes. Um cursor inválido retorna `400 INVALID_CURSOR`.
 
+O parâmetro `availability=all|available_now|rented_now` (padrão `all`) filtra por disponibilidade
+(RN-28, F-21), sempre com o "hoje" de `today_br()` (`America/Sao_Paulo`). `available_now` traz
+anúncios ativos com janela vigente hoje (`available_from ≤ hoje ≤ available_until`) e sem aluguel
+`accepted` cobrindo hoje; `rented_now` traz os que têm aluguel `accepted` em andamento hoje
+(início e fim inclusivos). `all` não restringe e mantém a RN-24. Valor desconhecido retorna
+`422 VALIDATION_ERROR`. O filtro combina com E com os demais (`q`, `categories[]`, `favorites`).
+
 A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
 `listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
 das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e

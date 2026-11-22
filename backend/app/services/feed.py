@@ -143,6 +143,7 @@ def get_feed(
     q: str | None = None,
     favorites: bool = False,
     categories: list[int] | None = None,
+    availability: str = "all",
     tags: list[str] | None = None,
     price_min: Decimal | None = None,
     price_max: Decimal | None = None,
@@ -230,6 +231,12 @@ def get_feed(
         )
     if favorites:
         conditions.append(favorite_for_user)
+    # RN-28: "all" não restringe; os grupos abaixo usam o mesmo "hoje" (today_br) do feed.
+    if availability == "available_now":
+        # Anúncio ativo (base), janela vigente hoje e sem aluguel aceito cobrindo hoje.
+        conditions.extend([Listing.available_from <= today, ~active_rental])
+    elif availability == "rented_now":
+        conditions.append(active_rental)
     stmt = stmt.where(*conditions)
     total_stmt = select(func.count(Listing.id)).join(User, User.id == Listing.owner_id)
     total = db.scalar(total_stmt.where(*conditions)) or 0

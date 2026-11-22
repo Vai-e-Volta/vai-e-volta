@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 from sqlalchemy.dialects.postgresql import insert
@@ -36,6 +37,7 @@ def listing_feed(
     q: str | None = Query(default=None),
     favorites: bool = Query(default=False),
     categories: list[int] | None = Query(default=None, alias="categories[]"),
+    availability: Literal["all", "available_now", "rented_now"] = Query(default="all"),
     tags: list[str] | None = Query(default=None, alias="tags[]", max_length=20),
     price_min: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
     price_max: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
@@ -53,6 +55,7 @@ def listing_feed(
             q,
             favorites,
             categories,
+            availability=availability,
             tags=tags,
             price_min=price_min,
             price_max=price_max,
