@@ -11,7 +11,7 @@ from app.db import get_db
 from app.errors import ApiError
 from app.models import Category, Listing, Tag, User, listing_tags
 from app.schemas.listings import CategoryResponse, ListingCreate, ListingCreated
-from app.services.listing_edit import edit_listing
+from app.services.listing_edit import edit_listing, require_editable_listing
 from app.services.listing_photos import store_listing_photos
 from app.services.rental_situation import today_br
 
@@ -63,6 +63,7 @@ async def update_listing(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ListingCreated:
+    listing = require_editable_listing(db, user, listing_id)
     if (
         request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
         != "multipart/form-data"
@@ -71,7 +72,7 @@ async def update_listing(
             status_code=415, code="UNSUPPORTED_MEDIA_TYPE", message="Use multipart/form-data."
         )
     form = await request.form()
-    edit_listing(db, user, listing_id, form)
+    edit_listing(db, listing, form)
     return ListingCreated(id=listing_id)
 
 
