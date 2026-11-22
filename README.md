@@ -161,6 +161,16 @@ def expire_proposals(session: Session, now: datetime) -> None: ...
 ```
 
 `now` é o instante atual em UTC, injetado pelo runner para permitir testes com relógio congelado.
+
+Tarefas registradas:
+
+| Tarefa | Frequência | O que faz |
+|---|---|---|
+| `heartbeat` | 30 s | Confere a conexão com o banco |
+| `expire_proposals` | 1 min | `pending` com `expires_at` vencido ou `start_date` antes de hoje vira `expired` (RN-47) |
+| `anonymize_accounts` | diária | Anonimiza contas excluídas após a retenção (RN-21) |
+| `cleanup` | diária | Remove tentativas de login antigas e fotos órfãs |
+
 Para acompanhar: `docker compose logs -f worker`.
 
 ## Documentação
