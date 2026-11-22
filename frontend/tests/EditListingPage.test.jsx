@@ -41,6 +41,7 @@ function mockApi({ listing = LISTING, patch = () => jsonResponse(200, { id: 'l1'
       return typeof listing === 'function' ? listing() : jsonResponse(200, listing);
     }
     if (url === '/api/listings/l1' && options.method === 'PATCH') return patch();
+    if (url === '/api/listings/l1/booked-periods') return jsonResponse(200, []);
     throw new Error(`URL inesperada: ${options.method} ${url}`);
   });
 }
@@ -85,7 +86,7 @@ describe('editar anúncio (F-41)', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await screen.findByRole('heading', { name: 'Item' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Seu anúncio' })).toBeInTheDocument();
     const [[, options]] = patchCalls(fetchMock);
     const body = options.body;
     expect([...body.keys()].filter((key, index, keys) => keys.indexOf(key) === index)).toEqual([
@@ -120,7 +121,7 @@ describe('editar anúncio (F-41)', () => {
     await user.type(screen.getByLabelText(/^Número/), '200');
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    await screen.findByRole('heading', { name: 'Item' });
+    await screen.findByRole('region', { name: 'Seu anúncio' });
     const body = patchCalls(fetchMock)[0][1].body;
     expect(body.get('pickup_number')).toBe('200');
     expect(body.get('pickup_cep')).toBe('96200000');
@@ -134,7 +135,7 @@ describe('editar anúncio (F-41)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await screen.findByRole('heading', { name: 'Item' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Seu anúncio' })).toBeInTheDocument();
     expect(patchCalls(fetchMock)).toHaveLength(0);
   });
 

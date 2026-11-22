@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import BrandMark from './BrandMark';
+import NotificationBell from './NotificationBell';
 import ProfileMenu from './ProfileMenu';
 
 /** Layout base das telas logadas: mobile-first, cabeçalho no topo e conteúdo centralizado. */
@@ -24,7 +25,12 @@ export default function Layout() {
             <BrandMark />
             Vai e Volta
           </Link>
-          {isAuthenticated && <ProfileMenu />}
+          {isAuthenticated && (
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <ProfileMenu />
+            </div>
+          )}
         </div>
       </header>
       <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-10">
