@@ -167,6 +167,7 @@ Tarefas registradas:
 | Tarefa | Frequência | O que faz |
 |---|---|---|
 | `heartbeat` | 30 s | Confere a conexão com o banco |
+| `calendar_notices` | 15 min | Avisa as duas partes de aluguéis `accepted`: véspera do início, véspera do fim e atraso (F-50); um aviso por parte e evento |
 | `expire_proposals` | 1 min | `pending` com `expires_at` vencido ou `start_date` antes de hoje vira `expired` (RN-47) |
 | `anonymize_accounts` | diária | Anonimiza contas excluídas após a retenção (RN-21) |
 | `cleanup` | diária | Remove tentativas de login antigas e fotos órfãs |
