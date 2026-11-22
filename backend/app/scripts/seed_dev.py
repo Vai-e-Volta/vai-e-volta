@@ -105,6 +105,7 @@ def _create_demo_image(path: Path, title: str, index: int) -> None:
         temporary_path = Path(file.name)
     try:
         image.save(temporary_path, format="PNG")
+        temporary_path.chmod(0o644)
         os.replace(temporary_path, path)
     finally:
         temporary_path.unlink(missing_ok=True)
