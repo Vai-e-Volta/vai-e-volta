@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
@@ -29,6 +30,7 @@ def listing_price_ranges(
     responses={
         400: {"model": ApiErrorResponse, "description": "Cursor inválido"},
         401: {"model": ApiErrorResponse, "description": "Sessão inválida"},
+        422: {"model": ApiErrorResponse, "description": "Filtro inválido"},
     },
 )
 def listing_feed(
@@ -36,13 +38,29 @@ def listing_feed(
     favorites: bool = Query(default=False),
     categories: list[int] | None = Query(default=None, alias="categories[]"),
     availability: Literal["all", "available_now", "rented_now"] = Query(default="all"),
+    tags: list[str] | None = Query(default=None, alias="tags[]", max_length=20),
+    price_min: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
+    price_max: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
     limit: int = Query(default=20, ge=1, le=50),
     cursor: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> FeedResponse:
-    feed = get_feed(db, user, limit, cursor, q, favorites, categories, availability)
-    return FeedResponse.model_validate(feed)
+    return FeedResponse.model_validate(
+        get_feed(
+            db,
+            user,
+            limit,
+            cursor,
+            q,
+            favorites,
+            categories,
+            availability=availability,
+            tags=tags,
+            price_min=price_min,
+            price_max=price_max,
+        )
+    )
 
 
 def _require_listing(db: Session, listing_id: int, *, allow_deleted: bool = False) -> None:

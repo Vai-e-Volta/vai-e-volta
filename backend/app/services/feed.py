@@ -2,14 +2,26 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from decimal import Decimal
 
-from sqlalchemy import and_, case, exists, func, or_, select
+from sqlalchemy import ColumnElement, and_, case, exists, func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
-from app.models import Category, Favorite, Listing, ListingPhoto, Rental, User
+from app.models import (
+    Category,
+    Favorite,
+    Listing,
+    ListingPhoto,
+    Rental,
+    Tag,
+    User,
+    listing_tags,
+)
 from app.services.rental_situation import today_br
+
+MAX_TAG_LENGTH = 30
 
 
 def price_ranges(db: Session) -> dict:
@@ -72,6 +84,57 @@ def escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def visible_listing_conditions(today: date) -> tuple[ColumnElement[bool], ...]:
+    """Listings shown in the feed (RN-24): active, still available and owner not deleted.
+
+    Requires ``User`` joined as the listing owner.
+    """
+    return (
+        Listing.status == "active",
+        Listing.available_until >= today,
+        User.deleted_at.is_(None),
+    )
+
+
+def normalize_tags(db: Session, tags: list[str]) -> list[str]:
+    """Tags as stored in ``tags.normalized_name``: trimmed, lowercase, without accents (RN-57)."""
+    cleaned = [tag.strip() for tag in tags]
+    if any(not tag or len(tag) > MAX_TAG_LENGTH for tag in cleaned):
+        raise ApiError(
+            status_code=422,
+            code="VALIDATION_ERROR",
+            message="Revise os campos informados.",
+            fields={"tags": f"Cada tag deve ter de 1 a {MAX_TAG_LENGTH} caracteres."},
+        )
+    normalized = db.scalar(
+        text(
+            "SELECT array(SELECT lower(public.immutable_unaccent(t)) "
+            "FROM unnest(CAST(:tags AS text[])) AS t)"
+        ),
+        {"tags": cleaned},
+    )
+    return sorted(set(normalized))
+
+
+def popular_tags(db: Session, q: str | None, limit: int) -> list[dict]:
+    """Tags of visible listings, most used first; with ``q``, those containing it (F-17)."""
+    usage = func.count(func.distinct(Listing.id)).label("count")
+    stmt = (
+        select(Tag.name, usage)
+        .join(listing_tags, listing_tags.c.tag_id == Tag.id)
+        .join(Listing, Listing.id == listing_tags.c.listing_id)
+        .join(User, User.id == Listing.owner_id)
+        .where(*visible_listing_conditions(today_br()))
+        .group_by(Tag.id, Tag.name)
+        .order_by(usage.desc(), Tag.normalized_name)
+        .limit(limit)
+    )
+    if q and q.strip():
+        term = normalize_tags(db, [q])[0]
+        stmt = stmt.where(Tag.normalized_name.like(f"%{escape_like(term)}%", escape="\\"))
+    return [{"name": name, "count": count} for name, count in db.execute(stmt).all()]
+
+
 def get_feed(
     db: Session,
     user: User,
@@ -81,13 +144,12 @@ def get_feed(
     favorites: bool = False,
     categories: list[int] | None = None,
     availability: str = "all",
+    tags: list[str] | None = None,
+    price_min: Decimal | None = None,
+    price_max: Decimal | None = None,
 ) -> dict:
     today = today_br()
-    base_conditions = (
-        Listing.status == "active",
-        Listing.available_until >= today,
-        User.deleted_at.is_(None),
-    )
+    base_conditions = visible_listing_conditions(today)
     active_rental = exists(
         select(Rental.id).where(
             Rental.listing_id == Listing.id,
@@ -138,6 +200,30 @@ def get_feed(
                 fields={"categories": "Categoria desconhecida."},
             )
         conditions.append(Listing.category_id.in_(requested))
+    if tags:
+        normalized = normalize_tags(db, tags)
+        # OU dentro do tipo (RN-26): o anúncio precisa ter qualquer uma das tags.
+        conditions.append(
+            exists(
+                select(listing_tags.c.listing_id)
+                .join(Tag, Tag.id == listing_tags.c.tag_id)
+                .where(
+                    listing_tags.c.listing_id == Listing.id,
+                    Tag.normalized_name.in_(normalized),
+                )
+            )
+        )
+    if price_min is not None and price_max is not None and price_min > price_max:
+        raise ApiError(
+            status_code=422,
+            code="VALIDATION_ERROR",
+            message="Revise os campos informados.",
+            fields={"price_min": "O mínimo não pode ser maior que o máximo."},
+        )
+    if price_min is not None:
+        conditions.append(Listing.daily_price >= price_min)
+    if price_max is not None:
+        conditions.append(Listing.daily_price <= price_max)
     if q:
         pattern = f"%{escape_like(q)}%"
         conditions.append(
