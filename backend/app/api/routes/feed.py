@@ -32,8 +32,9 @@ def listing_feed(
     return FeedResponse.model_validate(get_feed(db, user, limit, cursor, q, favorites))
 
 
-def _require_listing(db: Session, listing_id: int) -> None:
-    if db.get(Listing, listing_id) is None:
+def _require_listing(db: Session, listing_id: int, *, allow_deleted: bool = False) -> None:
+    listing = db.get(Listing, listing_id)
+    if listing is None or (listing.status == "deleted" and not allow_deleted):
         raise ApiError(
             status_code=404,
             code="LISTING_NOT_FOUND",
@@ -72,7 +73,7 @@ def remove_favorite(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Response:
-    _require_listing(db, listing_id)
+    _require_listing(db, listing_id, allow_deleted=True)
     db.query(Favorite).filter_by(user_id=user.id, listing_id=listing_id).delete()
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
