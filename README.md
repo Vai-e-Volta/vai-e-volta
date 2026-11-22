@@ -152,6 +152,22 @@ nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índic
 `uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
 `rental_overdue` e torna o worker idempotente (`ON CONFLICT DO NOTHING`).
 
+## Página do item
+
+`GET /api/listings/{id}` (exige sessão) devolve a página do item (F-28, F-31): fotos (`id` e
+`filename`, a primeira é a capa), título, descrição, valor por dia, prazo máximo, janela, categoria,
+tags, `owner_username` e `is_owner`. `404 LISTING_NOT_FOUND` se o anúncio não existe. Anúncio
+pausado, excluído ou de conta excluída responde `200` com `{"id": ..., "unavailable": true}` e nada
+mais (RN-34); o dono o vê normalmente, com `status` indicando a situação (F-31). O local de retirada
+traz rua, bairro e cidade para todos; `pickup_number` e `pickup_complement` só vêm para o locatário
+com aluguel `accepted` no item, lidos da `listing_snapshot` desse aluguel, e o CEP nunca é devolvido
+(RN-35, RN-15).
+
+`GET /api/listings/{id}/booked-periods` (exige sessão) lista os períodos que bloqueiam datas
+(F-29): aluguéis `accepted` e `completed`, como na restrição `rentals_no_overlap` (RN-42), em ordem
+de início, no formato `{"items": [{"start_date", "end_date"}]}`. Propostas `pending` não bloqueiam
+(RN-44). Para anúncio indisponível a quem não é o dono, a lista vem vazia.
+
 ## Worker (tarefas agendadas)
 
 O serviço `worker` do Compose usa a mesma imagem do backend com o comando `python -m app.worker`
