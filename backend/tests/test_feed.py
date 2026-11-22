@@ -155,6 +155,18 @@ def test_create_listing_with_photo_and_categories(
         files={"photos[]": ("x.png", image.getvalue(), "image/png")},
     )
     assert bad.status_code == 422
+    for invalid_data in (
+        {**data, "daily_price": "0"},
+        {**data, "category_id": "999999"},
+        {**data, "pickup_state": "ZZ"},
+        {**data, "unexpected": "value"},
+    ):
+        invalid = client.post(
+            "/api/listings",
+            data=invalid_data,
+            files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+        )
+        assert invalid.status_code == 422
     duplicate = client.post(
         "/api/listings",
         data={**data, "tags[]": ["Foto", "foto"]},

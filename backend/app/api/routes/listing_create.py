@@ -66,6 +66,13 @@ def categories(
                             "available_from": {"type": "string", "format": "date"},
                             "available_until": {"type": "string", "format": "date"},
                             "category_id": {"type": "integer"},
+                            "pickup_cep": {"type": "string"},
+                            "pickup_street": {"type": "string"},
+                            "pickup_number": {"type": "string"},
+                            "pickup_complement": {"type": "string"},
+                            "pickup_neighborhood": {"type": "string"},
+                            "pickup_city": {"type": "string"},
+                            "pickup_state": {"type": "string"},
                             "tags[]": {"type": "array", "items": {"type": "string"}},
                             "photos[]": {
                                 "type": "array",

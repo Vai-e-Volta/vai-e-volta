@@ -1,7 +1,9 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.registration import VALID_UF
 
 
 class ListingCreate(BaseModel):
@@ -21,6 +23,13 @@ class ListingCreate(BaseModel):
     pickup_neighborhood: str | None = Field(default=None, min_length=1, max_length=100)
     pickup_city: str | None = Field(default=None, min_length=1, max_length=100)
     pickup_state: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+
+    @field_validator("pickup_state")
+    @classmethod
+    def validate_pickup_state(cls, value: str | None) -> str | None:
+        if value is not None and value not in VALID_UF:
+            raise ValueError("UF inválida")
+        return value
 
 
 class ListingCreated(BaseModel):
