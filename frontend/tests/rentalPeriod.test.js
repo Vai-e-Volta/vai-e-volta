@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  earlyReturnSummary,
   estimatedTotal,
   proposalSummary,
   rentalDays,
@@ -85,5 +86,34 @@ describe('validação do período na tela (RN-37 a RN-39)', () => {
         TODAY,
       ).errors.end_date,
     ).toBe('Este item é alugado por no máximo 1 dia.');
+  });
+});
+
+describe('devolução antecipada (RN-50)', () => {
+  const rental = {
+    start_date: '2026-11-18',
+    end_date: '2026-11-24',
+    estimated_total: '105.00',
+    daily_price_snapshot: '15.00',
+  };
+
+  it('recalcula pelos dias usados até hoje', () => {
+    expect(earlyReturnSummary(rental, '2026-11-20')).toEqual({
+      days: 3,
+      total: '45.00',
+      originalDays: 7,
+      originalTotal: '105.00',
+    });
+  });
+
+  it('sem o valor congelado, usa total ÷ dias', () => {
+    const { daily_price_snapshot: _ignored, ...withoutSnapshot } = rental;
+    expect(earlyReturnSummary(withoutSnapshot, '2026-11-18').total).toBe('15.00');
+  });
+
+  it('não é antecipada no último dia, depois dele ou antes do início', () => {
+    expect(earlyReturnSummary(rental, '2026-11-24')).toBeNull();
+    expect(earlyReturnSummary(rental, '2026-11-26')).toBeNull();
+    expect(earlyReturnSummary(rental, '2026-11-17')).toBeNull();
   });
 });

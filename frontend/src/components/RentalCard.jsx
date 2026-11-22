@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { uploadUrl } from '../services/listings';
-import { formatCurrency, isoToBrDate } from '../utils/format';
+import { formatCurrency, formatDate, isoToBrDate } from '../utils/format';
 import { rentalDays } from '../utils/rentalPeriod';
 import StatusBadge from './StatusBadge';
 
@@ -73,6 +73,19 @@ export default function RentalCard({ rental, role, children }) {
           {person?.phone && <span className="text-slate-300"> · {person.phone}</span>}
         </p>
         {address && <p className="mt-1 text-sm text-slate-400">Retirada: {address}</p>}
+        {rental.status === 'accepted' && rental.return_requested_at && (
+          <p className="mt-2 text-sm text-flow">
+            {role === 'owner'
+              ? `O locatário avisou a devolução em ${formatDate(rental.return_requested_at)}. Marque como devolvido quando receber o item.`
+              : `Você avisou a devolução em ${formatDate(rental.return_requested_at)}. Falta o dono confirmar.`}
+          </p>
+        )}
+        {rental.original_end_date && rental.returned_on && (
+          <p className="mt-1 text-sm text-slate-400">
+            Devolvido em {isoToBrDate(rental.returned_on)}, antes do fim previsto (
+            {isoToBrDate(rental.original_end_date)}).
+          </p>
+        )}
         {children && <div className="mt-3">{children}</div>}
       </div>
     </article>
