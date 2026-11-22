@@ -52,7 +52,9 @@ persistentemente usado pelo Compose. No CI, o runner usa o serviço PostgreSQL d
 
 `make seed` exige que o backend esteja em execução com `APP_ENV=dev`. Ele cria os cinco usuários
 do Apêndice A, quinze anúncios com imagens ilustrativas e aluguéis nas situações principais. A
-senha das contas fictícias é `Dev@12345`. A conta `elisa_rocha` começa excluída e pode ser
+senha das contas fictícias é `Dev@12345`. As imagens do feed ficam em
+`frontend/public/demo`; fotos enviadas pelos usuários continuam em `/uploads`. A conta
+`elisa_rocha` começa excluída e pode ser
 reativada pelo login. Executar novamente não duplica os dados nem desfaz alterações feitas nos
 registros existentes. E-mails de demonstração usam o domínio reservado `exemplo.test`.
 

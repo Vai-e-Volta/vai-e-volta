@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,6 +60,8 @@ def test_seed_creates_demo_and_can_run_twice_without_overwriting(
         )
         assert len(list(tmp_path.glob("*.png"))) == 15
         for photo in tmp_path.glob("*.png"):
+            if os.name != "nt":
+                assert photo.stat().st_mode & 0o444 == 0o444
             with Image.open(photo) as image:
                 image.verify()
         elisa = session.get(User, seed_dev._user_id("elisa_rocha"))
