@@ -40,3 +40,20 @@ class DeleteAccountRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     password: str = Field(min_length=1, max_length=128)
+
+
+class UpdateAccountRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    full_name: str | None = None
+    username: str | None = None
+    email: str | None = None
+    cpf: str | None = None
+    phone: str | None = None
+    cep: str | None = None
+    street: str | None = None
+    number: str | None = None
+    complement: str | None = None
+    neighborhood: str | None = None
+    city: str | None = None
+    state: str | None = None

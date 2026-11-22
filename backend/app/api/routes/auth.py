@@ -12,6 +12,7 @@ from app.schemas.auth import (
     DeleteAccountRequest,
     LoginRequest,
     MeResponse,
+    UpdateAccountRequest,
 )
 from app.schemas.registration import ApiErrorResponse, RegistrationRequest, RegistrationResponse
 from app.security.registration import RegistrationSecurity, registration_security
@@ -21,7 +22,7 @@ from app.security.session import (
     create_session_token,
     session_lifetime,
 )
-from app.services.account import change_password, delete_account
+from app.services.account import change_password, delete_account, update_account
 from app.services.authentication import authenticate, current_user_from_token
 from app.services.registration import register_user
 
@@ -132,6 +133,17 @@ def logout(
 
 @router.get("/me", response_model=MeResponse)
 def me(user: User = Depends(get_current_user)) -> MeResponse:
+    return MeResponse.model_validate(user, from_attributes=True)
+
+
+@account_router.patch("", response_model=MeResponse, responses={409: {"model": ApiErrorResponse}})
+def edit_account(
+    payload: UpdateAccountRequest,
+    db: Session = Depends(get_db),
+    _media_type: None = Depends(require_json_or_multipart),
+    user: User = Depends(get_current_user),
+) -> MeResponse:
+    update_account(db, user, payload.model_dump(exclude_unset=True))
     return MeResponse.model_validate(user, from_attributes=True)
 
 
