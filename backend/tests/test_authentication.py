@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from threading import Event
 from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
 from freezegun import freeze_time
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_db
 from app.db import get_engine
 from app.main import app
 from app.models import User
+from app.worker.tasks import anonymize_accounts
 
 
 @pytest.fixture
@@ -59,6 +62,57 @@ def _register(client: TestClient, prefix: str) -> dict[str, str]:
     response = client.post("/api/auth/register", json=payload)
     assert response.status_code == 201, response.text
     return payload
+
+
+def test_login_and_anonymization_serialize_on_user(
+    auth_context: tuple[TestClient, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.services import authentication
+
+    client, prefix = auth_context
+    payload = _register(client, prefix)
+    now = datetime.now(UTC)
+    with Session(get_engine()) as session:
+        user = session.scalar(select(User).where(User.email == payload["email"]))
+        assert user is not None
+        user_id = user.id
+        user.deleted_at = now - timedelta(days=364)
+        user.purge_after = now + timedelta(minutes=1)
+        session.commit()
+
+    verifying, release = Event(), Event()
+    original_verify = authentication._verify_password
+
+    def delayed_verify(password_hash: str, password: str, *, fallback: bool = True) -> bool:
+        verifying.set()
+        if not release.wait(10):
+            raise TimeoutError("test did not release password verification")
+        return original_verify(password_hash, password, fallback=fallback)
+
+    monkeypatch.setattr(authentication, "_verify_password", delayed_verify)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        login = pool.submit(
+            client.post,
+            "/api/auth/login",
+            json={"identifier": payload["email"], "password": payload["password"]},
+        )
+        try:
+            assert verifying.wait(10)
+            with Session(get_engine()) as session:
+                anonymize_accounts(session, now + timedelta(minutes=2))
+                session.commit()
+                still_locked = session.get(User, user_id)
+                assert still_locked is not None and still_locked.anonymized_at is None
+                assert still_locked.deleted_at is not None
+        finally:
+            release.set()
+        assert login.result(timeout=10).status_code == 200
+
+    with Session(get_engine()) as session:
+        anonymize_accounts(session, now + timedelta(minutes=2))
+        session.commit()
+        user = session.get(User, user_id)
+        assert user is not None and user.deleted_at is None and user.anonymized_at is None
 
 
 def test_login_session_me_and_logout(auth_context: tuple[TestClient, str]) -> None:
