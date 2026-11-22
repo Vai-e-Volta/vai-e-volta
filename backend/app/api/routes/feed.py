@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -33,12 +35,14 @@ def listing_feed(
     q: str | None = Query(default=None),
     favorites: bool = Query(default=False),
     categories: list[int] | None = Query(default=None, alias="categories[]"),
+    availability: Literal["all", "available_now", "rented_now"] = Query(default="all"),
     limit: int = Query(default=20, ge=1, le=50),
     cursor: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> FeedResponse:
-    return FeedResponse.model_validate(get_feed(db, user, limit, cursor, q, favorites, categories))
+    feed = get_feed(db, user, limit, cursor, q, favorites, categories, availability)
+    return FeedResponse.model_validate(feed)
 
 
 def _require_listing(db: Session, listing_id: int, *, allow_deleted: bool = False) -> None:
