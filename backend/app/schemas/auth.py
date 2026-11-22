@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginRequest(BaseModel):
@@ -17,7 +17,7 @@ class MeResponse(BaseModel):
     id: UUID
     full_name: str
     username: str
-    email: EmailStr
+    email: str = Field(json_schema_extra={"format": "email"})
     phone: str
     cep: str
     street: str
