@@ -82,12 +82,14 @@ def authenticate(db: Session, identifier: str, password: str) -> tuple[User, str
             )
 
     user = db.scalar(
-        select(User).where(
+        select(User)
+        .where(
             or_(
                 func.lower(User.username) == normalized_identifier.casefold(),
                 func.lower(User.email) == normalized_identifier.casefold(),
             )
         )
+        .with_for_update()
     )
     password_matches = _verify_password(user.password_hash, password) if user else False
     if user is None:
@@ -97,7 +99,10 @@ def authenticate(db: Session, identifier: str, password: str) -> tuple[User, str
         user is None
         or not password_matches
         or user.anonymized_at is not None
-        or (user.deleted_at is not None and (user.purge_after is None or user.purge_after <= now))
+        or (
+            user.deleted_at is not None
+            and (user.purge_after is None or user.purge_after <= datetime.now(UTC))
+        )
     ):
         db.add(LoginAttempt(identifier_hash=identifier_digest, attempted_at=now, success=False))
         db.commit()

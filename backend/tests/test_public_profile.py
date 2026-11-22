@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.main import app
 from app.security.session import SESSION_COOKIE, create_session_token
+from app.worker.tasks import anonymize_accounts
 
 
 @pytest.fixture
@@ -76,7 +77,16 @@ def test_public_profile_does_not_expose_excluded_users(
     db: Connection,
     excluded_field: str,
 ) -> None:
-    user_id = insert_user(**{excluded_field: datetime.now(UTC)})
+    now = datetime.now(UTC)
+    if excluded_field == "anonymized_at":
+        user_id = insert_user(
+            deleted_at=now - timedelta(days=366), purge_after=now - timedelta(days=1)
+        )
+        with Session(bind=db, join_transaction_mode="create_savepoint") as session:
+            anonymize_accounts(session, now)
+            session.commit()
+    else:
+        user_id = insert_user(deleted_at=now)
     username = db.scalar(
         text("SELECT username FROM users WHERE id = :user_id"),
         {"user_id": user_id},
