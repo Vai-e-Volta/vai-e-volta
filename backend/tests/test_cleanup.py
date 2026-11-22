@@ -9,7 +9,15 @@ from pathlib import Path
 from sqlalchemy import Connection, text
 from sqlalchemy.orm import Session
 
-from app.worker.tasks import cleanup
+from app.worker.cleanup import cleanup
+from app.worker.registry import registry
+
+
+def test_worker_entrypoint_registers_cleanup() -> None:
+    import app.worker.__main__  # noqa: F401
+
+    assert registry.get("cleanup").function is cleanup
+    assert registry.get("cleanup").interval_seconds == 24 * 60 * 60
 
 
 def test_cleanup_preserves_referenced_photos_and_recent_files(
