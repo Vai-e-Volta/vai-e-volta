@@ -5,8 +5,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.api.routes.auth import account_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.feed import router as feed_router
 from app.api.routes.health import router as health_router
+from app.api.routes.rentals import router as rentals_router
 from app.config import Settings
 from app.config import settings as default_settings
 from app.errors import ApiError
@@ -72,6 +75,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
                     "fields": exc.fields,
                 }
             },
+            headers=exc.headers,
         )
 
 
@@ -90,6 +94,9 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     )
     app.add_middleware(RequestLoggingMiddleware)
     app.include_router(auth_router)
+    app.include_router(account_router)
+    app.include_router(feed_router)
+    app.include_router(rentals_router)
     app.include_router(health_router)
     _register_exception_handlers(app)
     return app
