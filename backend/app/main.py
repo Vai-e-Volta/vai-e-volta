@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes.auth import account_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.feed import router as feed_router
+from app.api.routes.rentals import router as rentals_router
 from app.errors import ApiError
 from app.migrations import upgrade_database
 
@@ -22,6 +23,7 @@ app = FastAPI(title="Vai e Volta API", version="0.1.0", lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(account_router)
 app.include_router(feed_router)
+app.include_router(rentals_router)
 
 
 @app.exception_handler(RequestValidationError)
