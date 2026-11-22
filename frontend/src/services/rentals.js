@@ -38,3 +38,13 @@ export async function getMyListings({ scope }, cursor = null) {
 export function cancelRental(id) {
   return api.post(`/rentals/${encodeURIComponent(id)}/cancel`);
 }
+
+/** Aceitar proposta (F-39): só o dono. Recusa as pendentes sobrepostas (RN-46). */
+export function acceptRental(id) {
+  return api.post(`/rentals/${encodeURIComponent(id)}/accept`);
+}
+
+/** Recusar proposta (F-39): só o dono, sem motivo (RN-63). */
+export function rejectRental(id) {
+  return api.post(`/rentals/${encodeURIComponent(id)}/reject`);
+}

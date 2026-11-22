@@ -4,6 +4,18 @@ import { formatCurrency, isoToBrDate } from '../utils/format';
 import { rentalDays } from '../utils/rentalPeriod';
 import StatusBadge from './StatusBadge';
 
+/**
+ * Endereço de retirada para o locatário. Número e complemento só vêm da API depois do
+ * aceite (RN-35); antes disso aparecem só rua, bairro e cidade.
+ */
+function pickupAddress(listing) {
+  const street = [listing.pickup_street, listing.pickup_number, listing.pickup_complement]
+    .filter(Boolean)
+    .join(', ');
+  const place = [listing.pickup_neighborhood, listing.pickup_city].filter(Boolean).join(', ');
+  return [street, place].filter(Boolean).join(' · ');
+}
+
 /** A outra parte do aluguel: o locatário para o dono e o dono para o locatário. */
 function otherParty(rental, role) {
   return role === 'owner' ? rental.renter : rental.owner;
@@ -11,7 +23,7 @@ function otherParty(rental, role) {
 
 /**
  * Linha de aluguel ou proposta (F-42 a F-45): item, período, valor estimado, situação
- * (RN-65) e a outra parte. O telefone só vem da API depois do aceite (RN-17); conta
+ * (RN-65) e a outra parte. O telefone e o endereço completo só vêm da API depois do aceite (RN-17, RN-35); conta
  * excluída aparece como "usuário excluído" (RN-19). As ações ficam em `children`.
  */
 export default function RentalCard({ rental, role, children }) {
@@ -19,6 +31,7 @@ export default function RentalCard({ rental, role, children }) {
   const person = otherParty(rental, role);
   const cover = uploadUrl(listing.cover_photo);
   const days = rentalDays(rental.start_date, rental.end_date);
+  const address = role === 'renter' ? pickupAddress(listing) : '';
 
   return (
     <article
@@ -59,6 +72,7 @@ export default function RentalCard({ rental, role, children }) {
           )}
           {person?.phone && <span className="text-slate-300"> · {person.phone}</span>}
         </p>
+        {address && <p className="mt-1 text-sm text-slate-400">Retirada: {address}</p>}
         {children && <div className="mt-3">{children}</div>}
       </div>
     </article>
