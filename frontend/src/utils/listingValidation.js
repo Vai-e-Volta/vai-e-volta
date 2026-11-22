@@ -281,12 +281,13 @@ export function toListingUpdateFormData(values, initial, photos, initialPhotos) 
 
   const tags = next.getAll(TAGS_FIELD);
   if (tags.join('\n') !== before.getAll(TAGS_FIELD).join('\n')) {
-    for (const tag of tags) data.append(TAGS_FIELD, tag);
+    if (tags.length === 0) data.append(TAGS_FIELD, '');
+    else for (const tag of tags) data.append(TAGS_FIELD, tag);
     changed = true;
   }
 
   if (PICKUP_FIELDS.some((field) => next.get(field) !== before.get(field))) {
-    for (const field of PICKUP_FIELDS) if (next.has(field)) data.append(field, next.get(field));
+    for (const field of PICKUP_FIELDS) data.append(field, next.get(field) ?? '');
     changed = true;
   }
 
