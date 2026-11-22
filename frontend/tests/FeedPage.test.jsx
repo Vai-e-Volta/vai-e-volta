@@ -53,9 +53,12 @@ describe('feed (F-15, F-23, F-24)', () => {
 
     renderWithProviders(<AppRoutes />, { route: '/' });
 
-    const card = await screen.findByRole('link', { name: /Furadeira de impacto/ });
+    const card = await screen.findByRole('article', { name: 'Furadeira de impacto' });
     expect(screen.getByText('2 itens encontrados')).toBeInTheDocument();
-    expect(card).toHaveAttribute('href', '/itens/1');
+    expect(within(card).getByRole('link', { name: 'Furadeira de impacto' })).toHaveAttribute(
+      'href',
+      '/itens/1',
+    );
     expect(within(card).getByText('Disponível')).toBeInTheDocument();
     expect(within(card).getByText('Ferramentas')).toBeInTheDocument();
     expect(within(card).getByText('R$ 25,00')).toBeInTheDocument();
@@ -64,10 +67,15 @@ describe('feed (F-15, F-23, F-24)', () => {
     expect(card.querySelector('img')).toHaveAttribute('src', '/uploads/foto-1.jpg');
     expect(within(card).queryByText('Seu anúncio')).not.toBeInTheDocument();
 
-    const own = screen.getByRole('link', { name: /Barraca/ });
+    const own = screen.getByRole('article', { name: 'Barraca' });
     expect(within(own).getByText('Alugado')).toBeInTheDocument();
     expect(within(own).getByText('Seu anúncio')).toBeInTheDocument();
     expect(within(own).getByText('Sem foto')).toBeInTheDocument();
+    // O dono não favorita o próprio anúncio; os outros cards têm o coração.
+    expect(within(own).queryByRole('button', { name: /Favoritar/ })).not.toBeInTheDocument();
+    expect(
+      within(card).getByRole('button', { name: 'Favoritar Furadeira de impacto' }),
+    ).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('usa o singular com um item e leva a /anunciar', async () => {
@@ -97,7 +105,7 @@ describe('feed (F-15, F-23, F-24)', () => {
     act(() => globalThis.intersectAll());
 
     expect(await screen.findByRole('link', { name: /Item 3/ })).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getAllByRole('article')).toHaveLength(3);
     expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument();
     expect(feedCalls(fetchMock).map((params) => params.get('cursor'))).toEqual([null, 'c2']);
   });
