@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.errors import ApiError
 from app.models import Listing, Notification, Rental, User
+from app.services.proposal_expiry import proposal_has_expired
 from app.services.rental_situation import today_br
 
 
@@ -53,6 +54,10 @@ def change_listing_status(db: Session, user: User, listing_id: int, action: str)
     now = datetime.now(UTC)
     for rental in rentals:
         if rental.status != "pending":
+            continue
+        if proposal_has_expired(rental.expires_at, rental.start_date, now):
+            # Already expired (RN-47) even if the worker has not run: not a rejection.
+            rental.status = "expired"
             continue
         rental.status = "rejected"
         rental.responded_at = now
