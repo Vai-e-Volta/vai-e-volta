@@ -497,6 +497,7 @@ def test_new_proposal_uses_edited_price_and_existing_rental_keeps_snapshot(
             session.execute(delete(User).where(User.id == renter_id))
             session.commit()
 
+
 def test_my_listings_are_private_and_paginated(
     feed_context: tuple[TestClient, uuid.UUID],
 ) -> None:
