@@ -11,10 +11,69 @@ from app.db import get_db
 from app.errors import ApiError
 from app.models import Category, Listing, Tag, User, listing_tags
 from app.schemas.listings import CategoryResponse, ListingCreate, ListingCreated
+from app.services.listing_edit import edit_listing, require_editable_listing
 from app.services.listing_photos import store_listing_photos
 from app.services.rental_situation import today_br
 
 router = APIRouter(tags=["listings"])
+
+
+@router.patch(
+    "/api/listings/{listing_id}",
+    response_model=ListingCreated,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "description": "Campos a atualizar; tags e fotos substituem a lista atual.",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "daily_price": {"type": "string"},
+                            "max_days": {"type": "integer"},
+                            "available_from": {"type": "string", "format": "date"},
+                            "available_until": {"type": "string", "format": "date"},
+                            "category_id": {"type": "integer"},
+                            "pickup_cep": {"type": "string"},
+                            "pickup_street": {"type": "string"},
+                            "pickup_number": {"type": "string"},
+                            "pickup_complement": {"type": "string"},
+                            "pickup_neighborhood": {"type": "string"},
+                            "pickup_city": {"type": "string"},
+                            "pickup_state": {"type": "string"},
+                            "tags[]": {"type": "array", "items": {"type": "string"}},
+                            "keep_photo_ids[]": {"type": "array", "items": {"type": "integer"}},
+                            "photos[]": {
+                                "type": "array",
+                                "items": {"type": "string", "format": "binary"},
+                            },
+                        },
+                    }
+                }
+            },
+        }
+    },
+)
+async def update_listing(
+    listing_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ListingCreated:
+    listing = require_editable_listing(db, user, listing_id)
+    if (
+        request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        != "multipart/form-data"
+    ):
+        raise ApiError(
+            status_code=415, code="UNSUPPORTED_MEDIA_TYPE", message="Use multipart/form-data."
+        )
+    form = await request.form()
+    edit_listing(db, listing, form)
+    return ListingCreated(id=listing_id)
 
 
 def invalid(field: str, message: str) -> ApiError:

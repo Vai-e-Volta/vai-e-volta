@@ -876,6 +876,127 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Update Listing",
+        "operationId": "update_listing_api_listings__listing_id__patch",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "description": "Campos a atualizar; tags e fotos substituem a lista atual.",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "daily_price": {
+                    "type": "string"
+                  },
+                  "max_days": {
+                    "type": "integer"
+                  },
+                  "available_from": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "available_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "category_id": {
+                    "type": "integer"
+                  },
+                  "pickup_cep": {
+                    "type": "string"
+                  },
+                  "pickup_street": {
+                    "type": "string"
+                  },
+                  "pickup_number": {
+                    "type": "string"
+                  },
+                  "pickup_complement": {
+                    "type": "string"
+                  },
+                  "pickup_neighborhood": {
+                    "type": "string"
+                  },
+                  "pickup_city": {
+                    "type": "string"
+                  },
+                  "pickup_state": {
+                    "type": "string"
+                  },
+                  "tags[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "keep_photo_ids[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "photos[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/rentals/{rental_id}/return-request": {
