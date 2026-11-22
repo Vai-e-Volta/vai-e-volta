@@ -240,6 +240,32 @@
         ]
       }
     },
+    "/api/listings/price-ranges": {
+      "get": {
+        "tags": [
+          "feed"
+        ],
+        "summary": "Listing Price Ranges",
+        "operationId": "listing_price_ranges_api_listings_price_ranges_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceRangesResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
+      }
+    },
     "/api/listings": {
       "get": {
         "tags": [
@@ -1001,6 +1027,45 @@
           "created_at"
         ],
         "title": "MeResponse"
+      },
+      "PriceRange": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "min": {
+            "type": "string",
+            "title": "Min"
+          },
+          "max": {
+            "type": "string",
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "min",
+          "max"
+        ],
+        "title": "PriceRange"
+      },
+      "PriceRangesResponse": {
+        "properties": {
+          "ranges": {
+            "items": {
+              "$ref": "#/components/schemas/PriceRange"
+            },
+            "type": "array",
+            "title": "Ranges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ranges"
+        ],
+        "title": "PriceRangesResponse"
       },
       "PublicUser": {
         "properties": {
