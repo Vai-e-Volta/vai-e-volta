@@ -173,6 +173,39 @@ def test_create_listing_with_photo_and_categories(
         files={"photos[]": ("x.png", image.getvalue(), "image/png")},
     )
     assert duplicate.status_code == 422
+    duplicate_accents = client.post(
+        "/api/listings",
+        data={**data, "tags[]": ["Ferramenta", "ferraménta"]},
+        files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+    )
+    assert duplicate_accents.status_code == 422
+    too_many_tags = client.post(
+        "/api/listings",
+        data={**data, "tags[]": [f"tag{i}" for i in range(6)]},
+        files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+    )
+    assert too_many_tags.status_code == 422
+    for invalid_data in (
+        {**data, "available_from": str(today + timedelta(days=11))},
+        {
+            **data,
+            "available_until": str(today - timedelta(days=1)),
+            "available_from": str(today - timedelta(days=10)),
+        },
+    ):
+        invalid = client.post(
+            "/api/listings",
+            data=invalid_data,
+            files={"photos[]": ("x.png", image.getvalue(), "image/png")},
+        )
+        assert invalid.status_code == 422
+    too_many_photos = client.post(
+        "/api/listings",
+        data=data,
+        files=[("photos[]", (f"{i}.png", image.getvalue(), "image/png")) for i in range(6)],
+    )
+    assert too_many_photos.status_code == 422
+    assert TestClient(app).get("/api/categories").status_code == 401
     invalid_image = client.post(
         "/api/listings", data=data, files={"photos[]": ("x.png", b"bad", "image/png")}
     )
