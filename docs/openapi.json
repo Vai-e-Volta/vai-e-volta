@@ -94,22 +94,22 @@
               }
             }
           },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -162,6 +162,99 @@
         ]
       }
     },
+    "/api/me": {
+      "delete": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Remove Account",
+        "operationId": "remove_account_api_me_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Edit Account",
+        "operationId": "edit_account_api_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
+      }
+    },
     "/api/me/password": {
       "put": {
         "tags": [
@@ -201,33 +294,20 @@
         ]
       }
     },
-    "/api/me": {
-      "delete": {
+    "/api/listings/price-ranges": {
+      "get": {
         "tags": [
-          "account"
+          "feed"
         ],
-        "summary": "Remove Account",
-        "operationId": "remove_account_api_me_delete",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteAccountRequest"
-              }
-            }
-          },
-          "required": true
-        },
+        "summary": "Listing Price Ranges",
+        "operationId": "listing_price_ranges_api_listings_price_ranges_get",
         "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/PriceRangesResponse"
                 }
               }
             }
@@ -452,13 +532,13 @@
         }
       }
     },
-    "/api/me/listings": {
-      "get": {
+    "/api/listings/{listing_id}/pause": {
+      "post": {
         "tags": [
           "listings"
         ],
-        "summary": "My Listings",
-        "operationId": "my_listings_api_me_listings_get",
+        "summary": "Pause Listing",
+        "operationId": "pause_listing_api_listings__listing_id__pause_post",
         "security": [
           {
             "SessionCookie": []
@@ -466,68 +546,19 @@
         ],
         "parameters": [
           {
-            "name": "scope",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "active",
-                "history"
-              ],
-              "type": "string",
-              "default": "active",
-              "title": "Scope"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "integer",
-              "maximum": 50,
               "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
+              "title": "Listing Id"
             }
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyListingsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            },
-            "description": "Bad Request"
+          "204": {
+            "description": "Successful Response"
           },
           "401": {
             "content": {
@@ -538,6 +569,198 @@
               }
             },
             "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{listing_id}/resume": {
+      "post": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Resume Listing",
+        "operationId": "resume_listing_api_listings__listing_id__resume_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{listing_id}": {
+      "delete": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "Delete Listing",
+        "operationId": "delete_listing_api_listings__listing_id__delete",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
           },
           "422": {
             "description": "Validation Error",
@@ -843,6 +1066,106 @@
           }
         }
       }
+    },
+    "/api/me/listings": {
+      "get": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "My Listings",
+        "operationId": "my_listings_api_me_listings_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "active",
+                "history"
+              ],
+              "type": "string",
+              "default": "active",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1102,152 +1425,44 @@
         ],
         "title": "MeResponse"
       },
-      "MyListing": {
+      "PriceRange": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "category_id": {
-            "type": "integer",
-            "title": "Category Id"
-          },
-          "title": {
+          "label": {
             "type": "string",
-            "title": "Title"
+            "title": "Label"
           },
-          "description": {
+          "min": {
             "type": "string",
-            "title": "Description"
+            "title": "Min"
           },
-          "daily_price": {
+          "max": {
             "type": "string",
-            "title": "Daily Price"
-          },
-          "max_days": {
-            "type": "integer",
-            "title": "Max Days"
-          },
-          "available_from": {
-            "type": "string",
-            "format": "date",
-            "title": "Available From"
-          },
-          "available_until": {
-            "type": "string",
-            "format": "date",
-            "title": "Available Until"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "pickup_cep": {
-            "type": "string",
-            "title": "Pickup Cep"
-          },
-          "pickup_street": {
-            "type": "string",
-            "title": "Pickup Street"
-          },
-          "pickup_number": {
-            "type": "string",
-            "title": "Pickup Number"
-          },
-          "pickup_complement": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pickup Complement"
-          },
-          "pickup_neighborhood": {
-            "type": "string",
-            "title": "Pickup Neighborhood"
-          },
-          "pickup_city": {
-            "type": "string",
-            "title": "Pickup City"
-          },
-          "pickup_state": {
-            "type": "string",
-            "title": "Pickup State"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "cover_photo": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cover Photo"
+            "title": "Max"
           }
         },
         "type": "object",
         "required": [
-          "id",
-          "category_id",
-          "title",
-          "description",
-          "daily_price",
-          "max_days",
-          "available_from",
-          "available_until",
-          "status",
-          "pickup_cep",
-          "pickup_street",
-          "pickup_number",
-          "pickup_complement",
-          "pickup_neighborhood",
-          "pickup_city",
-          "pickup_state",
-          "created_at"
+          "label",
+          "min",
+          "max"
         ],
-        "title": "MyListing"
+        "title": "PriceRange"
       },
-      "MyListingsResponse": {
+      "PriceRangesResponse": {
         "properties": {
-          "items": {
+          "ranges": {
             "items": {
-              "$ref": "#/components/schemas/MyListing"
+              "$ref": "#/components/schemas/PriceRange"
             },
             "type": "array",
-            "title": "Items"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
+            "title": "Ranges"
           }
         },
         "type": "object",
         "required": [
-          "items",
-          "next_cursor",
-          "total"
+          "ranges"
         ],
-        "title": "MyListingsResponse"
+        "title": "PriceRangesResponse"
       },
       "PublicUser": {
         "properties": {
@@ -1539,6 +1754,145 @@
         ],
         "title": "RentalListResponse"
       },
+      "UpdateAccountRequest": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "cpf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpf"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "cep": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cep"
+          },
+          "street": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "complement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complement"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateAccountRequest"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1673,6 +2027,153 @@
           "daily_price"
         ],
         "title": "PublicListing"
+      },
+      "MyListing": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "max_days": {
+            "type": "integer",
+            "title": "Max Days"
+          },
+          "available_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Available From"
+          },
+          "available_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Available Until"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "pickup_cep": {
+            "type": "string",
+            "title": "Pickup Cep"
+          },
+          "pickup_street": {
+            "type": "string",
+            "title": "Pickup Street"
+          },
+          "pickup_number": {
+            "type": "string",
+            "title": "Pickup Number"
+          },
+          "pickup_complement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Complement"
+          },
+          "pickup_neighborhood": {
+            "type": "string",
+            "title": "Pickup Neighborhood"
+          },
+          "pickup_city": {
+            "type": "string",
+            "title": "Pickup City"
+          },
+          "pickup_state": {
+            "type": "string",
+            "title": "Pickup State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Photo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "category_id",
+          "title",
+          "description",
+          "daily_price",
+          "max_days",
+          "available_from",
+          "available_until",
+          "status",
+          "pickup_cep",
+          "pickup_street",
+          "pickup_number",
+          "pickup_complement",
+          "pickup_neighborhood",
+          "pickup_city",
+          "pickup_state",
+          "created_at"
+        ],
+        "title": "MyListing"
+      },
+      "MyListingsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MyListing"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "total"
+        ],
+        "title": "MyListingsResponse"
       }
     },
     "securitySchemes": {
