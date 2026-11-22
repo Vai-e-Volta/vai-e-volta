@@ -379,6 +379,21 @@
             }
           },
           {
+            "name": "availability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "available_now",
+                "rented_now"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Availability"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
