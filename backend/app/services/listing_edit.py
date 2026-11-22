@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import uuid
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -138,12 +139,19 @@ def edit_listing(db: Session, listing: Listing, form: Any) -> None:
         )
 
     # Stage new files first, then persist database and files with compensation on failure.
-    upload_dir.mkdir(parents=True, exist_ok=True)
     moved: list[Path] = []
     try:
-        with tempfile.TemporaryDirectory(prefix=".listing-photos-", dir=upload_dir) as tmp:
+        if photos:
+            upload_dir.mkdir(parents=True, exist_ok=True)
+        temporary_dir = (
+            tempfile.TemporaryDirectory(prefix=".listing-photos-", dir=upload_dir)
+            if photos
+            else nullcontext(None)
+        )
+        with temporary_dir as tmp:
             staged = []
             for photo in photos:
+                assert tmp is not None
                 content = _read_file(photo.file, max_bytes)
                 image_format = _detect_format(content)
                 filename = f"{uuid.uuid4()}{_ALLOWED_FORMATS[image_format]}"
