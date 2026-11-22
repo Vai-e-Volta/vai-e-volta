@@ -1,4 +1,18 @@
+import { toFeedQuery } from '../utils/feedFilters';
 import { api } from './api';
+
+/** Endereço de uma foto enviada, servida pelo Nginx em /uploads (seções 10 e 11.4). */
+export function uploadUrl(filename) {
+  return filename ? `/uploads/${encodeURIComponent(filename)}` : null;
+}
+
+/**
+ * Feed (F-15, F-24): GET /api/listings com os filtros e o cursor da página.
+ * Resposta { items, next_cursor, total } (RN-30).
+ */
+export function getFeed(filters, cursor = null) {
+  return api.get(`/listings?${toFeedQuery(filters, cursor)}`);
+}
 
 /** Categorias fixas (RN-58): GET /api/categories. */
 export async function getCategories() {
