@@ -116,6 +116,31 @@ def test_feed_requires_login_and_rejects_invalid_cursor(
     assert invalid_cursor.json()["error"]["code"] == "INVALID_CURSOR"
 
 
+def test_my_listings_are_private_and_paginated(
+    feed_context: tuple[TestClient, uuid.UUID],
+) -> None:
+    client, user_id = feed_context
+    assert TestClient(app).get("/api/me/listings").status_code == 401
+    ids = [_insert_listing(user_id, f"Anúncio {i}") for i in range(3)]
+    with Session(get_engine()) as session:
+        paused = session.get(Listing, ids[0])
+        assert paused is not None
+        paused.status = "paused"
+        session.commit()
+    first = client.get("/api/me/listings", params={"limit": 1})
+    assert first.status_code == 200
+    assert first.json()["total"] == 2
+    assert first.json()["items"][0]["pickup_street"] == "Rua Privada"
+    second = client.get(
+        "/api/me/listings", params={"limit": 1, "cursor": first.json()["next_cursor"]}
+    )
+    assert second.status_code == 200
+    assert first.json()["items"][0]["id"] != second.json()["items"][0]["id"]
+    history = client.get("/api/me/listings", params={"scope": "history"})
+    assert [item["id"] for item in history.json()["items"]] == [ids[0]]
+    assert client.get("/api/me/listings", params={"cursor": "!"}).status_code == 400
+
+
 def test_category_filter_combines_categories_and_search(
     feed_context: tuple[TestClient, uuid.UUID],
 ) -> None:

@@ -94,22 +94,22 @@
               }
             }
           },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponse"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
                 }
               }
             }
@@ -357,25 +357,6 @@
               "type": "boolean",
               "default": false,
               "title": "Favorites"
-            }
-          },
-          {
-            "name": "categories[]",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "integer"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Categories[]"
             }
           },
           {
@@ -1079,6 +1060,106 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/listings": {
+      "get": {
+        "tags": [
+          "listings"
+        ],
+        "summary": "My Listings",
+        "operationId": "my_listings_api_me_listings_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "active",
+                "history"
+              ],
+              "type": "string",
+              "default": "active",
+              "title": "Scope"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyListingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1946,6 +2027,153 @@
           "daily_price"
         ],
         "title": "PublicListing"
+      },
+      "MyListing": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "category_id": {
+            "type": "integer",
+            "title": "Category Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "max_days": {
+            "type": "integer",
+            "title": "Max Days"
+          },
+          "available_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Available From"
+          },
+          "available_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Available Until"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "pickup_cep": {
+            "type": "string",
+            "title": "Pickup Cep"
+          },
+          "pickup_street": {
+            "type": "string",
+            "title": "Pickup Street"
+          },
+          "pickup_number": {
+            "type": "string",
+            "title": "Pickup Number"
+          },
+          "pickup_complement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Complement"
+          },
+          "pickup_neighborhood": {
+            "type": "string",
+            "title": "Pickup Neighborhood"
+          },
+          "pickup_city": {
+            "type": "string",
+            "title": "Pickup City"
+          },
+          "pickup_state": {
+            "type": "string",
+            "title": "Pickup State"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Photo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "category_id",
+          "title",
+          "description",
+          "daily_price",
+          "max_days",
+          "available_from",
+          "available_until",
+          "status",
+          "pickup_cep",
+          "pickup_street",
+          "pickup_number",
+          "pickup_complement",
+          "pickup_neighborhood",
+          "pickup_city",
+          "pickup_state",
+          "created_at"
+        ],
+        "title": "MyListing"
+      },
+      "MyListingsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MyListing"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "total"
+        ],
+        "title": "MyListingsResponse"
       }
     },
     "securitySchemes": {
