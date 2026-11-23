@@ -3,7 +3,8 @@ from __future__ import annotations
 import base64
 import json
 from datetime import UTC, date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from sqlalchemy import ColumnElement, and_, case, exists, func, or_, select, text
 from sqlalchemy.orm import Session
@@ -22,6 +23,17 @@ from app.models import (
 from app.services.rental_situation import today_br
 
 MAX_TAG_LENGTH = 30
+MAX_PRICE = Decimal("5000")
+MAX_BIGINT = 2**63 - 1
+
+# sort -> (chave do cursor, coluna da chave, crescente?). O desempate por id segue a mesma
+# direção da chave, para os índices (created_at, id) e (daily_price, id) servirem às 4 ordens.
+_SORTS: dict[str, tuple[str, Any, bool]] = {
+    "newest": ("created_at", Listing.created_at, False),
+    "oldest": ("created_at", Listing.created_at, True),
+    "price_asc": ("daily_price", Listing.daily_price, True),
+    "price_desc": ("daily_price", Listing.daily_price, False),
+}
 
 
 def price_ranges(db: Session) -> dict:
@@ -77,6 +89,55 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
             code="INVALID_CURSOR",
             message="Cursor inválido.",
         ) from None
+
+
+def _invalid_cursor() -> ApiError:
+    return ApiError(status_code=400, code="INVALID_CURSOR", message="Cursor inválido.")
+
+
+def _encode_feed_cursor(sort: str, last: dict[str, Any]) -> str:
+    """Cursor por chave (RN-30): ordem usada, chave dessa ordem e id do último item."""
+    key_name = _SORTS[sort][0]
+    key = last[key_name]
+    value = key.astimezone(UTC).isoformat() if isinstance(key, datetime) else f"{key:.2f}"
+    payload = json.dumps(
+        {"sort": sort, key_name: value, "id": last["id"]}, separators=(",", ":")
+    ).encode()
+    return base64.urlsafe_b64encode(payload).decode().rstrip("=")
+
+
+def _parse_price_key(raw: object) -> Decimal:
+    if not isinstance(raw, str):
+        raise ValueError
+    price = Decimal(raw)
+    if not price.is_finite() or not 0 <= price <= MAX_PRICE or price.as_tuple().exponent < -2:
+        raise ValueError
+    return price
+
+
+def _decode_feed_cursor(cursor: str, sort: str) -> tuple[datetime | Decimal, int]:
+    """Valida o cursor para a ordem pedida; qualquer defeito vira 400 INVALID_CURSOR."""
+    key_name = _SORTS[sort][0]
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        payload = json.loads(base64.b64decode(padded, altchars=b"-_", validate=True))
+        listing_id = payload["id"]
+        if (
+            payload["sort"] != sort
+            or isinstance(listing_id, bool)
+            or not isinstance(listing_id, int)
+            or not 1 <= listing_id <= MAX_BIGINT
+        ):
+            raise ValueError
+        if key_name == "created_at":
+            key = datetime.fromisoformat(payload[key_name])
+            if key.tzinfo is None:
+                raise ValueError
+        else:
+            key = _parse_price_key(payload[key_name])
+        return key, listing_id
+    except (ValueError, TypeError, KeyError, InvalidOperation):
+        raise _invalid_cursor() from None
 
 
 def escape_like(value: str) -> str:
@@ -147,6 +208,7 @@ def get_feed(
     tags: list[str] | None = None,
     price_min: Decimal | None = None,
     price_max: Decimal | None = None,
+    sort: str = "newest",
 ) -> dict:
     today = today_br()
     base_conditions = visible_listing_conditions(today)
@@ -170,6 +232,11 @@ def get_feed(
         .correlate(Listing)
         .scalar_subquery()
     )
+    _key_name, key_column, ascending = _SORTS[sort]
+    if ascending:
+        order = (key_column.asc(), Listing.id.asc())
+    else:
+        order = (key_column.desc(), Listing.id.desc())
     stmt = (
         select(
             Listing.id,
@@ -186,7 +253,7 @@ def get_feed(
         )
         .join(User, User.id == Listing.owner_id)
         .join(Category, Category.id == Listing.category_id)
-        .order_by(Listing.created_at.desc(), Listing.id.desc())
+        .order_by(*order)
     )
     conditions = list(base_conditions)
     if categories:
@@ -241,17 +308,14 @@ def get_feed(
     total_stmt = select(func.count(Listing.id)).join(User, User.id == Listing.owner_id)
     total = db.scalar(total_stmt.where(*conditions)) or 0
     if cursor:
-        created_at, listing_id = _decode_cursor(cursor)
-        stmt = stmt.where(
-            or_(
-                Listing.created_at < created_at,
-                and_(Listing.created_at == created_at, Listing.id < listing_id),
-            )
-        )
+        key, listing_id = _decode_feed_cursor(cursor, sort)
+        if ascending:
+            after = or_(key_column > key, and_(key_column == key, Listing.id > listing_id))
+        else:
+            after = or_(key_column < key, and_(key_column == key, Listing.id < listing_id))
+        stmt = stmt.where(after)
     rows = db.execute(stmt.limit(limit + 1)).mappings().all()
     has_more = len(rows) > limit
     items = [dict(row) for row in rows[:limit]]
-    next_cursor = (
-        _encode_cursor(items[-1]["created_at"], items[-1]["id"]) if has_more and items else None
-    )
+    next_cursor = _encode_feed_cursor(sort, items[-1]) if has_more and items else None
     return {"items": items, "next_cursor": next_cursor, "total": total}

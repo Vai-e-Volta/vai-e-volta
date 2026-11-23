@@ -114,13 +114,21 @@ fica só como hash SHA-256 do valor normalizado, nunca em claro.
 - Uma conta excluída pode ser reativada ao entrar antes de `purge_after`; seus anúncios permanecem
   pausados. `ACCOUNT_RETENTION_DAYS` define o prazo (365 dias por padrão).
 
-`GET /api/listings` exige sessão e retorna o feed em ordem mais recente, com paginação por cursor
+`GET /api/listings` exige sessão e retorna o feed, por padrão do mais recente ao mais antigo, com paginação por cursor
 (padrão 20 itens, máximo 50). O total considera anúncios ativos cuja janela não terminou e cujo
 dono não foi excluído; os cards mostram bairro e cidade, sem dados pessoais ou endereço completo.
 O parâmetro opcional `q` busca parte do título sem diferenciar maiúsculas ou acentos; `%`, `_` e
 `\` são tratados como texto comum. Cada card também traz `is_favorite`; `favorites=true` limita o
 feed aos favoritos. Favoritar e desfavoritar usam `PUT` e `DELETE /api/listings/{id}/favorite` e são
 idempotentes. Um cursor inválido retorna `400 INVALID_CURSOR`.
+
+O parâmetro `sort=newest|oldest|price_asc|price_desc` (padrão `newest`, F-20) ordena o feed por data
+de publicação ou por valor por dia, sempre com desempate por `id` na mesma direção da chave. A
+paginação é por chave (RN-30): o `next_cursor` guarda a ordem usada, a chave dela (`created_at` ou
+`daily_price`) e o `id` do último item, então a rolagem não repete nem pula itens em nenhuma ordem,
+mesmo que anúncios sejam criados durante ela. Um cursor só vale para a ordem em que foi gerado;
+usado com outro `sort`, ou malformado, retorna `400 INVALID_CURSOR`. Um `sort` desconhecido retorna
+`422 VALIDATION_ERROR`. A consulta usa os índices `(created_at, id)` e `(daily_price, id)`.
 
 O parâmetro `availability=all|available_now|rented_now` (padrão `all`) filtra por disponibilidade
 (RN-28, F-21), sempre com o "hoje" de `today_br()` (`America/Sao_Paulo`). `available_now` traz
