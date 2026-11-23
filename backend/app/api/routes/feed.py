@@ -41,6 +41,7 @@ def listing_feed(
     tags: list[str] | None = Query(default=None, alias="tags[]", max_length=20),
     price_min: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
     price_max: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
+    sort: Literal["newest", "oldest", "price_asc", "price_desc"] = Query(default="newest"),
     limit: int = Query(default=20, ge=1, le=50),
     cursor: str | None = Query(default=None),
     db: Session = Depends(get_db),
@@ -59,6 +60,7 @@ def listing_feed(
             tags=tags,
             price_min=price_min,
             price_max=price_max,
+            sort=sort,
         )
     )
 
