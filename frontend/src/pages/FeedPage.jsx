@@ -118,12 +118,20 @@ export default function FeedPage() {
             {data ? countLabel(total) : ' '}
           </p>
         </div>
-        <Link
-          to="/anunciar"
-          className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-ink shadow-lg shadow-accent/10 transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-        >
-          Anunciar item
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to="/alugueis?visao=anuncios"
+            className="rounded-lg border border-line px-5 py-2.5 font-semibold text-slate-200 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            Meus anúncios
+          </Link>
+          <Link
+            to="/anunciar"
+            className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-ink shadow-lg shadow-accent/10 transition-colors hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          >
+            Anunciar item
+          </Link>
+        </div>
       </div>
 
       {location.state?.listingDeleted && (

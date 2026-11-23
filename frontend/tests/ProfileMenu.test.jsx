@@ -38,7 +38,7 @@ describe('menu do perfil (F-09)', () => {
 
     expect(button).toHaveAttribute('aria-expanded', 'true');
     const items = screen.getAllByRole('menuitem').map((item) => item.textContent);
-    expect(items).toEqual(['Perfil', 'Configurações', 'Sair']);
+    expect(items).toEqual(['Perfil', 'Configurações', 'Meus anúncios', 'Sair']);
     expect(screen.getByRole('menuitem', { name: 'Perfil' })).toHaveFocus();
   });
 
@@ -81,6 +81,17 @@ describe('menu do perfil (F-09)', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Perfil' }));
 
     expect(await screen.findByRole('heading', { name: '@ana_teste' })).toBeInTheDocument();
+  });
+
+  it('Meus anúncios abre a visão do anunciante', async () => {
+    mockApi();
+    const { user, button } = await renderFeed();
+    await user.click(button);
+    await user.click(screen.getByRole('menuitem', { name: 'Meus anúncios' }));
+    expect(await screen.findByRole('tab', { name: 'Meus anúncios' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('fecha ao clicar fora', async () => {

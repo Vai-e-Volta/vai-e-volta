@@ -84,6 +84,10 @@ describe('feed (F-15, F-23, F-24)', () => {
     renderWithProviders(<AppRoutes />, { route: '/' });
 
     expect(await screen.findByText('1 item encontrado')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Meus anúncios' })).toHaveAttribute(
+      'href',
+      '/alugueis?visao=anuncios',
+    );
     expect(screen.getByRole('link', { name: 'Anunciar item' })).toHaveAttribute(
       'href',
       '/anunciar',
