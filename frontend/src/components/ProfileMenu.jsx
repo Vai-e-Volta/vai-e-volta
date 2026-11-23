@@ -29,6 +29,7 @@ export default function ProfileMenu() {
       action: () => navigate(`/usuarios/${encodeURIComponent(username)}`),
     },
     { id: 'settings', label: 'Configurações', action: () => navigate('/configuracoes') },
+    { id: 'listings', label: 'Meus anúncios', action: () => navigate('/alugueis?visao=anuncios') },
     {
       id: 'logout',
       label: isLeaving ? 'Saindo…' : 'Sair',

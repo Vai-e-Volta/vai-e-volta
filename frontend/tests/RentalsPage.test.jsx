@@ -90,6 +90,9 @@ function mockApi({ cancel } = {}) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, options = {}) => {
     const method = options.method ?? 'GET';
     if (url === '/api/auth/me') return jsonResponse(200, { id: 1, username: 'ana_teste' });
+    if (url.startsWith('/api/listings?')) return jsonResponse(200, { items: [], total: 0 });
+    if (url === '/api/categories' || url.startsWith('/api/tags')) return jsonResponse(200, []);
+    if (url === '/api/listings/price-ranges') return jsonResponse(200, { ranges: [] });
     const parsed = new URL(url, 'http://localhost');
     const params = parsed.searchParams;
     if (parsed.pathname === '/api/me/rentals') {
@@ -118,6 +121,19 @@ function mockApi({ cancel } = {}) {
 const card = (name) => screen.findByRole('article', { name: new RegExp(`^${name}`) });
 
 describe('tela Aluguéis (F-42, F-43, F-45)', () => {
+  it('permite acessar meus anúncios pelo feed e ver os controles', async () => {
+    mockApi();
+    const user = userEvent.setup();
+    renderWithProviders(<AppRoutes />, { route: '/' });
+    await user.click(await screen.findByRole('link', { name: 'Meus anúncios' }));
+    expect(await screen.findByRole('tab', { name: 'Meus anúncios' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(await screen.findByRole('article', { name: 'Caixa de som' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reativar' })).toBeInTheDocument();
+  });
+
   it('começa em Meus anúncios, ativos, com propostas, aluguéis e anúncios', async () => {
     mockApi();
     renderWithProviders(<AppRoutes />, { route: '/alugueis' });
