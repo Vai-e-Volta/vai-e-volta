@@ -1,20 +1,28 @@
-"""Owner accepts a pending proposal (F-39; RN-46, RN-48, RN-63).
+"""Owner accepts a pending proposal (F-39; RN-42, RN-46, RN-48, RN-63).
 
 Validation order follows the technical document: owner, then state and expiry, then the
-transaction that accepts the proposal and settles the overlapping ones. The notices to the
-renters (H023-1) and the handling of a simultaneous acceptance (H017-2) are not part of this step.
+transaction that accepts the proposal and settles the overlapping ones. The database has the last
+word on overlaps (RN-42): if its exclusion constraint fires, the whole transaction is undone and the
+answer is 409 RENTAL_OVERLAP. The notices to the renters (H023-1) are not part of this step.
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
 from app.models import Listing, Rental, User
 from app.services.proposal_expiry import proposal_has_expired
+
+logger = logging.getLogger(__name__)
+
+# PostgreSQL SQLSTATE for a violated exclusion constraint (rentals_no_overlap, RN-42).
+EXCLUSION_VIOLATION = "23P01"
 
 
 def accept_proposal(db: Session, user: User, rental_id: int) -> None:
@@ -58,27 +66,44 @@ def accept_proposal(db: Session, user: User, rental_id: int) -> None:
             message="A proposta expirou e não pode mais ser aceita.",
         )
 
-    rental.status = "accepted"
-    rental.responded_at = now
+    listing_id = rental.listing_id
+    try:
+        rental.status = "accepted"
+        rental.responded_at = now
 
-    # RN-46, same transaction: overlapping pending proposals of this listing are settled.
-    overlapping = db.scalars(
-        select(Rental)
-        .where(
-            Rental.listing_id == rental.listing_id,
-            Rental.id != rental.id,
-            Rental.status == "pending",
-            Rental.start_date <= rental.end_date,
-            Rental.end_date >= rental.start_date,
+        # RN-46, same transaction: overlapping pending proposals of this listing are settled.
+        # This query also flushes the acceptance, which is where the constraint can fire.
+        overlapping = db.scalars(
+            select(Rental)
+            .where(
+                Rental.listing_id == listing_id,
+                Rental.id != rental.id,
+                Rental.status == "pending",
+                Rental.start_date <= rental.end_date,
+                Rental.end_date >= rental.start_date,
+            )
+            .order_by(Rental.id)
+            .with_for_update()
         )
-        .order_by(Rental.id)
-        .with_for_update()
-    )
-    for other in overlapping:
-        if proposal_has_expired(other.expires_at, other.start_date, now):
-            # Already expired (RN-47) even if the worker has not run: not a refusal.
-            other.status = "expired"
-        else:
-            other.status = "rejected"
-            other.responded_at = now
-    db.commit()
+        for other in overlapping:
+            if proposal_has_expired(other.expires_at, other.start_date, now):
+                # Already expired (RN-47) even if the worker has not run: not a refusal.
+                other.status = "expired"
+            else:
+                other.status = "rejected"
+                other.responded_at = now
+        db.commit()
+    except IntegrityError as error:
+        # Nothing of this acceptance survives: not the proposal, not the refusals.
+        db.rollback()
+        if getattr(error.orig, "sqlstate", None) != EXCLUSION_VIOLATION:
+            raise
+        logger.warning(
+            "Rental booking conflict on accept",
+            extra={"rental_id": rental_id, "listing_id": listing_id},
+        )
+        raise ApiError(
+            status_code=409,
+            code="RENTAL_OVERLAP",
+            message="Este período já está reservado por outro aluguel aceito.",
+        ) from error

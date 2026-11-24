@@ -169,7 +169,9 @@ vencida (`expires_at` alcançado) ou com `start_date` anterior a hoje (RN-47, RN
 com o estado gravado, e responde `409 PROPOSAL_EXPIRED`. Aceitando, a proposta passa a `accepted` e,
 na mesma transação, as outras `pending` do mesmo anúncio com período sobreposto (inclusivo) viram
 `rejected` (RN-46); as que já estavam vencidas viram `expired`, como na pausa do anúncio. Responde
-`204`. Os avisos aos locatários ficam na H023-1 e o aceite simultâneo na H017-2.
+`204`. Se a restrição de exclusão disparar (aceite simultâneo, `23P01`, RN-42), a transação inteira é
+desfeita e a resposta é `409 RENTAL_OVERLAP`, com `WARNING` de conflito de reserva no log. Os
+avisos aos locatários ficam na H023-1.
 
 A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
 nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
