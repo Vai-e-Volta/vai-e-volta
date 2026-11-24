@@ -163,6 +163,14 @@ reservado, em andamento, atrasado e histórico) e usa o dia local de `America/Sa
 O locatário pode registrar a solicitação de devolução antecipada em
 `POST /api/rentals/{id}/return-request` após o início do aluguel.
 
+`POST /api/rentals/{id}/accept` (F-39) é o aceite do dono, na ordem do documento técnico: só o dono
+(`403 FORBIDDEN`, RN-63); só proposta `pending` (`409 INVALID_STATE` nos demais estados); proposta
+vencida (`expires_at` alcançado) ou com `start_date` anterior a hoje (RN-47, RN-48) vira `expired`,
+com o estado gravado, e responde `409 PROPOSAL_EXPIRED`. Aceitando, a proposta passa a `accepted` e,
+na mesma transação, as outras `pending` do mesmo anúncio com período sobreposto (inclusivo) viram
+`rejected` (RN-46); as que já estavam vencidas viram `expired`, como na pausa do anúncio. Responde
+`204`. Os avisos aos locatários ficam na H023-1 e o aceite simultâneo na H017-2.
+
 A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
 nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
 `uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
