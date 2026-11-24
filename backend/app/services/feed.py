@@ -205,6 +205,8 @@ def get_feed(
     favorites: bool = False,
     categories: list[int] | None = None,
     availability: str = "all",
+    needed_from: date | None = None,
+    needed_until: date | None = None,
     tags: list[str] | None = None,
     price_min: Decimal | None = None,
     price_max: Decimal | None = None,
@@ -304,6 +306,27 @@ def get_feed(
         conditions.extend([Listing.available_from <= today, ~active_rental])
     elif availability == "rented_now":
         conditions.append(active_rental)
+    # RN-29 (F-22): só vale com os dois limites; com apenas um deles o filtro é ignorado.
+    if needed_from is not None and needed_until is not None:
+        if needed_from > needed_until:
+            raise ApiError(
+                status_code=422,
+                code="VALIDATION_ERROR",
+                message="Revise os campos informados.",
+                fields={"needed_from": "A data inicial não pode ser depois da final."},
+            )
+        # Intervalos inclusivos nas duas pontas, como na restrição de aluguéis (RN-42, RN-36).
+        overlapping_rental = exists(
+            select(Rental.id).where(
+                Rental.listing_id == Listing.id,
+                Rental.status == "accepted",
+                Rental.start_date <= needed_until,
+                Rental.end_date >= needed_from,
+            )
+        )
+        conditions.append(Listing.available_from <= needed_from)
+        conditions.append(Listing.available_until >= needed_until)
+        conditions.append(~overlapping_rental)
     stmt = stmt.where(*conditions)
     total_stmt = select(func.count(Listing.id)).join(User, User.id == Listing.owner_id)
     total = db.scalar(total_stmt.where(*conditions)) or 0

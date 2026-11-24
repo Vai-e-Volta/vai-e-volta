@@ -137,6 +137,14 @@ anúncios ativos com janela vigente hoje (`available_from ≤ hoje ≤ available
 (início e fim inclusivos). `all` não restringe e mantém a RN-24. Valor desconhecido retorna
 `422 VALIDATION_ERROR`. O filtro combina com E com os demais (`q`, `categories[]`, `favorites`).
 
+Os parâmetros `needed_from` e `needed_until` (`YYYY-MM-DD`, "preciso de … até …", F-22) filtram por
+período desejado (RN-29). Só valem juntos: com apenas um deles o filtro é ignorado. Com os dois,
+o feed traz só anúncios cuja janela cobre o período inteiro (`available_from ≤ needed_from` e
+`available_until ≥ needed_until`) e sem aluguel `accepted` sobreposto, com intervalos inclusivos
+nas duas pontas: um aluguel que termina em 14/10 só libera nova retirada em 15/10 (RN-42). Propostas
+`pending` não bloqueiam (RN-44). Data inválida, ou `needed_from` depois de `needed_until`, retorna
+`422 VALIDATION_ERROR`. O filtro combina com E com os demais e o `total` o acompanha.
+
 A migração `H006-1` cria `categories` (com as 8 categorias fixas da RN-58), `listings`,
 `listing_photos`, `tags` e `listing_tags`. Preço, prazo máximo, janela de disponibilidade, posição
 das fotos e tag normalizada têm CHECK no banco; mínimo/máximo de fotos, máximo de tags e

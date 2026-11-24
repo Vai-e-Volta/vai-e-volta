@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
@@ -38,6 +39,8 @@ def listing_feed(
     favorites: bool = Query(default=False),
     categories: list[int] | None = Query(default=None, alias="categories[]"),
     availability: Literal["all", "available_now", "rented_now"] = Query(default="all"),
+    needed_from: date | None = Query(default=None),
+    needed_until: date | None = Query(default=None),
     tags: list[str] | None = Query(default=None, alias="tags[]", max_length=20),
     price_min: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
     price_max: Decimal | None = Query(default=None, ge=0, le=5000, decimal_places=2),
@@ -57,6 +60,8 @@ def listing_feed(
             favorites,
             categories,
             availability=availability,
+            needed_from=needed_from,
+            needed_until=needed_until,
             tags=tags,
             price_min=price_min,
             price_max=price_max,
