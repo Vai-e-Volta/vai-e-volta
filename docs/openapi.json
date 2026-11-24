@@ -394,6 +394,40 @@
             }
           },
           {
+            "name": "needed_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needed From"
+            }
+          },
+          {
+            "name": "needed_until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needed Until"
+            }
+          },
+          {
             "name": "tags[]",
             "in": "query",
             "required": false,
