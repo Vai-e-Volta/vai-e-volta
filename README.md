@@ -163,6 +163,12 @@ reservado, em andamento, atrasado e histórico) e usa o dia local de `America/Sa
 O locatário pode registrar a solicitação de devolução antecipada em
 `POST /api/rentals/{id}/return-request` após o início do aluguel.
 
+`POST /api/rentals/{id}/reject` (F-39) é a recusa manual do dono, sem motivo: só o dono (`403
+FORBIDDEN`, RN-63) e só proposta `pending` (`409 INVALID_STATE` nos demais estados). A proposta vira
+`rejected` e a resposta é `204`. Como no aceite, proposta vencida ou com `start_date` anterior a
+hoje (RN-47, RN-48) vira `expired`, com o estado gravado, e responde `409 PROPOSAL_EXPIRED`. A
+recusa não mexe em nenhuma outra proposta. O aviso ao locatário (`reason: owner`) fica na H023-1.
+
 `POST /api/rentals/{id}/accept` (F-39) é o aceite do dono, na ordem do documento técnico: só o dono
 (`403 FORBIDDEN`, RN-63); só proposta `pending` (`409 INVALID_STATE` nos demais estados); proposta
 vencida (`expires_at` alcançado) ou com `start_date` anterior a hoje (RN-47, RN-48) vira `expired`,
