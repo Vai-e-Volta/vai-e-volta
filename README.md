@@ -190,6 +190,20 @@ nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índic
 `uq_notifications_worker_user_type_rental` vale para `rental_starting`, `return_due` e
 `rental_overdue` e torna o worker idempotente (`ON CONFLICT DO NOTHING`).
 
+A API de avisos (H022-2, F-46, F-47, F-52) só devolve e altera os avisos de quem está logado:
+`GET /api/notifications` lista do mais novo ao mais antigo, com `limit` (padrão 20, máximo 50) e
+cursor por chave `(created_at, id)`, no formato `{items, next_cursor, total}`; cada item traz `id`,
+`type`, `rental_id`, `payload`, `created_at` e `read_at` (`null` = não lido, RN-68), e o texto é
+montado no frontend. `GET /api/notifications/unread-count` devolve `{"count": N}` para o sino.
+`POST /api/notifications/{id}/read` e `POST /api/notifications/read-all` respondem `204`; ler de
+novo não muda o `read_at` original. Aviso de outro usuário retorna `403 FORBIDDEN` e aviso
+inexistente `404 NOTIFICATION_NOT_FOUND`.
+
+As demais tarefas emitem avisos com `create_notification(db, user_id, type, rental_id, payload)`,
+em `app/services/notifications.py`. A função só adiciona o aviso à transação de quem a chama
+(nada é commitado ali), valida o tipo e recusa chaves de dados pessoais no `payload` (`ValueError`).
+Para os tipos do worker, uma chamada repetida não cria outro aviso e devolve `None`.
+
 ## Página do item
 
 `GET /api/listings/{id}` (exige sessão) devolve a página do item (F-28, F-31): fotos (`id` e
