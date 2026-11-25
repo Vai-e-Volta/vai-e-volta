@@ -14,6 +14,7 @@ from app.models import Rental, User
 from app.schemas.registration import ApiErrorResponse
 from app.schemas.rentals import RentalListResponse
 from app.services.rental_accept import accept_proposal
+from app.services.rental_complete import mark_rental_returned
 from app.services.rental_situation import today_br
 from app.services.rentals import list_rentals
 
@@ -111,6 +112,25 @@ def accept_rental(
     user: User = Depends(get_current_user),
 ) -> Response:
     accept_proposal(db, user, rental_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{rental_id}/complete",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {"model": ApiErrorResponse, "description": "Sessão inválida"},
+        403: {"model": ApiErrorResponse, "description": "Somente o dono pode concluir"},
+        404: {"model": ApiErrorResponse, "description": "Aluguel não encontrado"},
+        409: {"model": ApiErrorResponse, "description": "Aluguel em estado inválido"},
+    },
+)
+def complete_rental(
+    rental_id: int = Path(ge=1),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    mark_rental_returned(db, user, rental_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
