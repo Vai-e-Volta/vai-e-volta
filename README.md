@@ -175,7 +175,15 @@ vencida (`expires_at` alcançado) ou com `start_date` anterior a hoje (RN-47, RN
 com o estado gravado, e responde `409 PROPOSAL_EXPIRED`. Aceitando, a proposta passa a `accepted` e,
 na mesma transação, as outras `pending` do mesmo anúncio com período sobreposto (inclusivo) viram
 `rejected` (RN-46); as que já estavam vencidas viram `expired`, como na pausa do anúncio. Responde
-`204`. Os avisos aos locatários ficam na H023-1 e o aceite simultâneo na H017-2.
+`204`. Se a restrição de exclusão disparar (aceite simultâneo, `23P01`, RN-42), a transação inteira é
+desfeita e a resposta é `409 RENTAL_OVERLAP`, com `WARNING` de conflito de reserva no log. Os
+avisos aos locatários ficam na H023-1.
+
+`POST /api/rentals/{id}/complete` (F-40) marca o aluguel como devolvido: só o dono (`403 FORBIDDEN`,
+RN-64) e só aluguel `accepted` com `start_date` menor ou igual a hoje (`409 INVALID_STATE` nos demais
+casos, inclusive antes do início). Passa a `completed`, grava `returned_on` com o dia de hoje e vai
+para o histórico (RN-66); responde `204`. Aluguel atrasado conclui normalmente, sem multa nem
+bloqueio. A devolução antecipada, que encurta o período, é a H021-2, e o aviso ao locatário, a H023-2.
 
 A migração `H022-1` cria `notifications` (RN-68). O banco guarda só dados (`type` e `payload`),
 nunca a frase, e um CHECK recusa chaves de dados pessoais no `payload`. O índice único parcial
