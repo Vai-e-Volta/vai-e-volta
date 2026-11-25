@@ -84,13 +84,13 @@ def test_API_RNT_10_list_shows_overdue_pending_as_expired_in_history(
         active = list_rentals(session, user, role, "active", 20, None)
         history = list_rentals(session, user, role, "history", 20, None)
 
-        assert [item["id"] for item in active["items"]] == [open_one]
-        assert active["items"][0]["status"] == "pending"
-        assert active["items"][0]["situation"] == "Aguardando"
+        assert [item.id for item in active["items"]] == [open_one]
+        assert active["items"][0].status == "pending"
+        assert active["items"][0].situation == "Aguardando"
 
-        assert [item["id"] for item in history["items"]] == [overdue]
-        assert history["items"][0]["status"] == "expired"
-        assert history["items"][0]["situation"] == "Expirado"
+        assert [item.id for item in history["items"]] == [overdue]
+        assert history["items"][0].status == "expired"
+        assert history["items"][0].situation == "Expirado"
 
     # Nothing was written: the database still says pending until the worker runs.
     assert _status(db, overdue) == "pending"
