@@ -2114,6 +2114,101 @@
   },
   "components": {
     "schemas": {
+      "AcceptedRentalListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "cover_photo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Photo"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "situation": {
+            "type": "string",
+            "title": "Situation"
+          },
+          "daily_price": {
+            "type": "string",
+            "title": "Daily Price"
+          },
+          "estimated_total": {
+            "type": "string",
+            "title": "Estimated Total"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "other_party_name": {
+            "type": "string",
+            "title": "Other Party Name"
+          },
+          "other_party_phone": {
+            "type": "string",
+            "title": "Other Party Phone"
+          },
+          "pickup_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PickupAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "listing_id",
+          "title",
+          "cover_photo",
+          "start_date",
+          "end_date",
+          "status",
+          "situation",
+          "daily_price",
+          "estimated_total",
+          "created_at",
+          "other_party_name",
+          "other_party_phone",
+          "pickup_address"
+        ],
+        "title": "AcceptedRentalListItem",
+        "description": "Only for the two parties of an `accepted` rental: phone (RN-17) and address (RN-35)."
+      },
       "ApiErrorDetail": {
         "properties": {
           "code": {
@@ -2603,6 +2698,87 @@
         ],
         "title": "MyListingsResponse"
       },
+      "PickupAddress": {
+        "properties": {
+          "street": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Street"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "complement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complement"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "street",
+          "number",
+          "complement",
+          "neighborhood",
+          "city",
+          "state"
+        ],
+        "title": "PickupAddress",
+        "description": "Pickup address from the rental's listing_snapshot (RN-35). The CEP is never returned."
+      },
       "PriceRange": {
         "properties": {
           "label": {
@@ -3013,17 +3189,6 @@
           "other_party_name": {
             "type": "string",
             "title": "Other Party Name"
-          },
-          "other_party_phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Other Party Phone"
           }
         },
         "type": "object",
@@ -3039,16 +3204,23 @@
           "daily_price",
           "estimated_total",
           "created_at",
-          "other_party_name",
-          "other_party_phone"
+          "other_party_name"
         ],
-        "title": "RentalListItem"
+        "title": "RentalListItem",
+        "description": "What any party of a rental sees, in any state: no phone and no complete address."
       },
       "RentalListResponse": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/RentalListItem"
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AcceptedRentalListItem"
+                },
+                {
+                  "$ref": "#/components/schemas/RentalListItem"
+                }
+              ]
             },
             "type": "array",
             "title": "Items"
