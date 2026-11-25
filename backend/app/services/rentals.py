@@ -3,12 +3,14 @@ from __future__ import annotations
 import base64
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from app.errors import ApiError
 from app.models import Listing, ListingPhoto, Rental, User
+from app.schemas.rentals import AcceptedRentalListItem, PickupAddress, RentalListItem
 from app.services.proposal_expiry import effective_status, pending_is_expired
 from app.services.rental_situation import rental_situation
 
@@ -42,6 +44,63 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
             code="INVALID_CURSOR",
             message="Cursor inválido.",
         ) from None
+
+
+def _text_or_none(value: Any) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
+def _pickup_address(snapshot: dict[str, Any]) -> PickupAddress | None:
+    """Address read from the copy kept in the rental, so a later edit does not change it."""
+    parts = {
+        name: _text_or_none(snapshot.get(f"pickup_{name}"))
+        for name in ("street", "number", "complement", "neighborhood", "city", "state")
+    }
+    return PickupAddress(**parts) if any(parts.values()) else None
+
+
+def serialize_rental_item(
+    rental: Rental,
+    listing: Listing,
+    other_party: User,
+    cover_photo: str | None,
+    viewer: User,
+    now: datetime,
+) -> RentalListItem | AcceptedRentalListItem:
+    """The only place where a rental becomes a response (RN-17, RN-35).
+
+    The phone of the other party and the complete pickup address go only to the two parties of an
+    `accepted` rental. Anyone else, and every other state, gets the schema without those fields.
+    """
+    deleted = other_party.deleted_at is not None
+    common = {
+        "id": rental.id,
+        "listing_id": listing.id,
+        "title": rental.listing_snapshot.get("title", "Anúncio indisponível"),
+        "cover_photo": cover_photo,
+        "start_date": rental.start_date,
+        "end_date": rental.end_date,
+        "status": effective_status(rental.status, rental.expires_at, rental.start_date, now),
+        "situation": rental_situation(
+            rental.status,
+            rental.start_date,
+            rental.end_date,
+            rental.expires_at,
+            now=now,
+        ),
+        "daily_price": rental.daily_price_snapshot,
+        "estimated_total": rental.estimated_total,
+        "created_at": rental.created_at,
+        "other_party_name": "Usuário excluído" if deleted else other_party.full_name,
+    }
+    is_party = viewer.id in (rental.renter_id, listing.owner_id)
+    if rental.status == "accepted" and is_party and not deleted:
+        return AcceptedRentalListItem(
+            **common,
+            other_party_phone=other_party.phone,
+            pickup_address=_pickup_address(rental.listing_snapshot),
+        )
+    return RentalListItem(**common)
 
 
 def list_rentals(
@@ -89,37 +148,11 @@ def list_rentals(
         .limit(limit + 1)
     ).all()
     has_more = len(rows) > limit
-    items = []
-    for rental, listing, other_party, cover_photo in rows[:limit]:
-        deleted = other_party.deleted_at is not None
-        items.append(
-            {
-                "id": rental.id,
-                "listing_id": listing.id,
-                "title": rental.listing_snapshot.get("title", "Anúncio indisponível"),
-                "cover_photo": cover_photo,
-                "start_date": rental.start_date,
-                "end_date": rental.end_date,
-                "status": effective_status(
-                    rental.status, rental.expires_at, rental.start_date, now
-                ),
-                "situation": rental_situation(
-                    rental.status,
-                    rental.start_date,
-                    rental.end_date,
-                    rental.expires_at,
-                    now=now,
-                ),
-                "daily_price": rental.daily_price_snapshot,
-                "estimated_total": rental.estimated_total,
-                "created_at": rental.created_at,
-                "other_party_name": "Usuário excluído" if deleted else other_party.full_name,
-                "other_party_phone": (
-                    None if deleted or rental.status != "accepted" else other_party.phone
-                ),
-            }
-        )
-    next_cursor = (
-        _encode_cursor(items[-1]["created_at"], items[-1]["id"]) if has_more and items else None
-    )
+    items = [
+        serialize_rental_item(rental, listing, other_party, cover_photo, user, now)
+        for rental, listing, other_party, cover_photo in rows[:limit]
+    ]
+    next_cursor = None
+    if has_more and items:
+        next_cursor = _encode_cursor(items[-1].created_at, items[-1].id)
     return {"items": items, "next_cursor": next_cursor, "total": total}

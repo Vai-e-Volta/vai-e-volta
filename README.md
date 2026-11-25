@@ -220,6 +220,15 @@ com aluguel `accepted` no item, lidos da `listing_snapshot` desse aluguel, e o C
 de início, no formato `{"items": [{"start_date", "end_date"}]}`. Propostas `pending` não bloqueiam
 (RN-44). Para anúncio indisponível a quem não é o dono, a lista vem vazia.
 
+`GET /api/me/rentals` (F-39, RN-17, RN-35) devolve, para o locatário e para o dono, o telefone da
+outra parte (`other_party_phone`) e o endereço completo de retirada (`pickup_address`: rua, número,
+complemento, bairro, cidade e UF, lido da `listing_snapshot` do aluguel) **somente** nos aluguéis
+`accepted`. Em qualquer outro estado esses campos não existem na resposta (não vêm como `null`), e
+quem não é uma das duas partes não recebe o aluguel. O CEP nunca é devolvido. A visibilidade é
+decidida em um único ponto de serialização (`serialize_rental_item`), com dois schemas de saída:
+`RentalListItem` (sem contato) e `AcceptedRentalListItem` (com contato). Conta excluída da outra
+parte também fica sem contato.
+
 ## Worker (tarefas agendadas)
 
 O serviço `worker` do Compose usa a mesma imagem do backend com o comando `python -m app.worker`

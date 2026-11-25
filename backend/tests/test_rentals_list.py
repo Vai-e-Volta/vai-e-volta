@@ -160,7 +160,7 @@ def test_renter_active_and_history_hide_phone_until_accepted(
     assert item["title"] == "Título congelado"
     assert item["situation"] == "Aguardando"
     assert item["other_party_name"] == "Pessoa 1"
-    assert item["other_party_phone"] is None
+    assert "other_party_phone" not in item
 
     history = client.get("/api/me/rentals", params={"role": "renter", "scope": "history"})
     assert history.status_code == 200
@@ -194,7 +194,7 @@ def test_owner_view_reveals_phone_only_for_accepted_and_paginates(
     assert next_page.status_code == 200
     assert len(next_page.json()["items"]) == 1
     assert next_page.json()["items"][0]["status"] == "pending"
-    assert next_page.json()["items"][0]["other_party_phone"] is None
+    assert "other_party_phone" not in next_page.json()["items"][0]
 
 
 def test_deleted_counterparty_is_anonymized(
@@ -210,4 +210,4 @@ def test_deleted_counterparty_is_anonymized(
     response = client.get("/api/me/rentals", params={"role": "renter", "scope": "active"})
     assert response.status_code == 200
     assert response.json()["items"][0]["other_party_name"] == "Usuário excluído"
-    assert response.json()["items"][0]["other_party_phone"] is None
+    assert "other_party_phone" not in response.json()["items"][0]
