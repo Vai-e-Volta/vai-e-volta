@@ -13,6 +13,7 @@ from app.api.routes.listing_create import router as listing_create_router
 from app.api.routes.listing_detail import router as listing_detail_router
 from app.api.routes.listing_lifecycle import router as listing_lifecycle_router
 from app.api.routes.my_listings import router as my_listings_router
+from app.api.routes.notifications import router as notifications_router
 from app.api.routes.rentals import list_router as rentals_list_router
 from app.api.routes.rentals import router as rentals_router
 from app.api.routes.tags import router as tags_router
@@ -108,6 +109,7 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
     app.include_router(listing_create_router)
     app.include_router(listing_lifecycle_router)
     app.include_router(my_listings_router)
+    app.include_router(notifications_router)
     app.include_router(rentals_router)
     app.include_router(rentals_list_router)
     app.include_router(tags_router)
